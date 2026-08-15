@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/relance.js": { "runtime": "nodejs22.x", "maxDuration": 60 },
+    "api/mettre-en-attente.js": { "runtime": "nodejs22.x", "maxDuration": 30 }
+  },
+  "crons": [
+    {
+      "path": "/api/relance",
+      "schedule": "0 6 * * 1-5"
+    }
+  ]
+}
