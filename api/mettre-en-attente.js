@@ -9,16 +9,19 @@
 
 import { neon } from '@neondatabase/serverless';
 import { prochaineRelance } from '../lib/jours-ouvres.js';
+import { protege, auteurDepuis } from '../lib/verrou.js';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 
-export default async function handler(req, res) {
+export default protege(async (req, res, utilisateur) => {
   if (req.method !== 'POST') return res.status(405).json({ erreur: 'POST attendu' });
 
   const sql = neon(process.env.DATABASE_URL);
-  const { action, demandeId, motif, serviceNom, telephone, destinataire, auteur } = req.body || {};
+  const { action, demandeId, motif, serviceNom, telephone, destinataire } = req.body || {};
 
-  if (!auteur) return res.status(400).json({ erreur: 'auteur obligatoire (initiales)' });
+  // L'auteur n'est plus déclaré par l'appelant : il vient du jeton.
+  // Une piste d'audit où chacun signe du nom qu'il veut ne prouve rien.
+  const auteur = auteurDepuis(utilisateur);
 
   try {
     // ------------------------------------------------------- mise en attente
@@ -96,4 +99,4 @@ export default async function handler(req, res) {
     console.error('[MATRICE] mettre-en-attente', e);
     return res.status(500).json({ erreur: e.message });
   }
-}
+});
