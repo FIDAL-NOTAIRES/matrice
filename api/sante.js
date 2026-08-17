@@ -39,15 +39,28 @@ export default async function handler(req, res) {
   const officeComplet = config.MATRICE_OFFICE_NOM && config.MATRICE_OFFICE_ADRESSE
     && config.MATRICE_OFFICE_CP && config.MATRICE_OFFICE_COMMUNE;
 
-  const graphPret = config.AZURE_TENANT_ID && config.AZURE_CLIENT_ID
-    && config.AZURE_CLIENT_SECRET && config.MATRICE_BOITE_SERVICE;
+  // Deux régimes distincts, et il ne faut pas les confondre dans le diagnostic :
+  //   • l'ENVOI part de l'écran, sous l'identité du collaborateur — échange
+  //     on-behalf-of, qui n'a besoin ni de boîte de service ni de consentement
+  //     administrateur ;
+  //   • la RELANCE tourne sous cron, sans personne : régime application, qui
+  //     exige une boîte de service et un consentement administrateur.
+  const echangePret = config.AZURE_TENANT_ID && config.AZURE_CLIENT_ID && config.AZURE_CLIENT_SECRET;
+  const graphPret = echangePret && config.MATRICE_BOITE_SERVICE;
 
   const rapport = {
     service: 'MATRICE',
     le: new Date().toISOString(),
     node: process.version,
     config,
-    courriel: graphPret ? 'Graph configuré' : 'repli .eml (AZURE_* incomplets)',
+    courriel: {
+      envoi: echangePret
+        ? 'Graph — brouillon déposé dans la boîte du collaborateur (on-behalf-of)'
+        : 'repli .eml (AZURE_TENANT_ID / AZURE_CLIENT_ID / AZURE_CLIENT_SECRET)',
+      relance: graphPret
+        ? 'Graph — brouillon déposé dans la boîte de service'
+        : 'repli .eml (MATRICE_BOITE_SERVICE ou AZURE_* manquants)',
+    },
     verrou: (config.AZURE_TENANT_ID && config.AZURE_CLIENT_ID) ? 'Entra'
       : config.MATRICE_MOT_DE_PASSE ? 'mot de passe (recette)'
       : 'NON CONFIGURÉ — les routes protégées rendront 503',
