@@ -1,4 +1,3 @@
-js
 // MATRICE — génération des formulaires et dépôt des brouillons
 //
 // Dernier maillon : prend les demandes prêtes d'un dossier, fabrique un Cerfa
