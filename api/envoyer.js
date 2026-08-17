@@ -236,15 +236,16 @@ function phrases(g) {
   return {
     communes: g.lignes.map((l) => ({ nom: l.nom_commune, code: l.code_insee })),
     ouverture: 'Madame, Monsieur,',
-    objet: `Je vous écris à la demande et en qualité de mandataire de ${l0.societe}`
+    objet: `Je vous écris en qualité de notaire, à la demande et pour le compte de ${l0.societe}`
       + `${l0.siren ? ` (SIREN ${l0.siren})` : ''}. Pour les besoins du traitement d'un dossier `
       + `en cours, je vous serai reconnaissant de bien vouloir faire retour à la présente demande `
       + `de délivrance d'extraits de matrice cadastrale pour les communes suivantes, relevant de `
       + `votre service :`,
     pieces: `En conséquence je vous prie de trouver ci-joint ${n} formulaire${n > 1 ? 's' : ''} `
-      + `6815-EM-SD, un par commune concernée. Ces demandes étant présentées en qualité de `
-      + `mandataire du titulaire de droits réels susvisé, les limites fixées au I de l’article `
-      + `R 107 A-3 du livre des procédures fiscales ne leur sont pas applicables.`,
+      + `6815-EM-SD, un par commune concernée. Ces demandes étant présentées par un notaire pour `
+      + `le compte du titulaire de droits réels susvisé, elles ne sont soumises ni à la production `
+      + `d’un mandat, ni aux limites fixées au I de l’article R 107 A-3 du livre des procédures `
+      + `fiscales.`,
     politesse: 'Vous remerciant par avance pour votre retour, je vous assure de mon profond respect.',
   };
 }
