@@ -278,7 +278,9 @@ function dessiner() {
     <label class="confirm"><input type="checkbox" id="ok">
       <span>J’ai lu la liste des destinataires et le détail des communes. Je confirme l’envoi sous ma responsabilité${r.enAttente ? ', et j’accepte que les communes en attente ne partent pas' : ''}.</span></label>
     <div class="actions">
+      <input type="file" id="mandat" accept="application/pdf" style="display:none">
       <button class="primaire" id="go" disabled>Envoyer ${r.courriels} courriel${r.courriels > 1 ? 's' : ''} · ${r.formulaires} formulaires</button>
+      <button class="ghost" id="simuler">Simuler</button>
       <button class="ghost" id="rafraichir">Rafraîchir</button>
       <span class="hint ${bloque ? 'blk' : ''}" id="hint"></span>
     </div>
@@ -298,14 +300,8 @@ function dessiner() {
   };
   ok.onchange = maj; maj();
 
-  go.onclick = () => {
-    // L'envoi lui-même n'est pas encore branché : il suppose la génération des
-    // Cerfa et le dépôt de brouillon via Graph. Plutôt qu'un bouton qui ment,
-    // on le dit.
-    alert("L'envoi n'est pas encore branché.\n\nIl reste à générer les formulaires 6815-EM-SD "
-      + "et à déposer le brouillon via Graph. Tout le reste — routage, file d'attente, relances, "
-      + "contrôles — est opérationnel.");
-  };
+  go.onclick = () => lancer(false);
+  document.getElementById('simuler').onclick = () => lancer(true);
 
   app.querySelectorAll('[data-debloquer]').forEach((b) => { b.onclick = () => debloquer(b.dataset.debloquer, b.dataset.commune); });
   app.querySelectorAll('[data-abandonner]').forEach((b) => { b.onclick = () => abandonner(b.dataset.abandonner, b.dataset.commune); });
@@ -341,6 +337,82 @@ function blocAttente(l) {
         <button class="ghost" data-abandonner="${l.id}" data-commune="${e(l.commune)}">Retirer du dossier</button>
       </div>
     </div></div>`;
+}
+
+// ------------------------------------------------------------------ envoi
+/**
+ * Le mandat est demandé à chaque fois, y compris en simulation : c'est lui qui
+ * pèse le plus lourd dans les pièces jointes, et mesurer sans lui ne mesurerait
+ * rien d'utile. Le serveur refuse de toute façon sans lui.
+ */
+function demanderMandat() {
+  return new Promise((resoudre) => {
+    const champ = document.getElementById('mandat');
+    champ.value = '';
+    champ.onchange = () => {
+      const f = champ.files?.[0];
+      if (!f) return resoudre(null);
+      const lecteur = new FileReader();
+      lecteur.onload = () => resoudre({ nom: f.name, contenuBase64: String(lecteur.result).split(',')[1] });
+      lecteur.onerror = () => resoudre(null);
+      lecteur.readAsDataURL(f);
+    };
+    champ.click();
+  });
+}
+
+/** Un .eml rendu par le repli : on le donne à télécharger, l'utilisateur l'ouvre dans Outlook. */
+function telechargerEml(nom, contenu) {
+  const url = URL.createObjectURL(new Blob([contenu], { type: 'message/rfc822' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = nom; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+async function lancer(simulation) {
+  const hint = document.getElementById('hint');
+  const mandat = await demanderMandat();
+  if (!mandat) { hint.textContent = 'Envoi annulé : aucun mandat joint.'; return; }
+
+  const go = document.getElementById('go'), sim = document.getElementById('simuler');
+  go.disabled = true; sim.disabled = true;
+  hint.className = 'hint';
+  hint.textContent = simulation ? 'Simulation en cours…' : 'Génération des formulaires…';
+
+  try {
+    const r = await api('/api/envoyer', {
+      method: 'POST',
+      body: JSON.stringify({ dossier, mandat, simulation }),
+    });
+
+    const detail = r.envois.map((e) => `${e.formulaires} formulaires → ${e.destinataire}`).join('\n');
+
+    if (simulation) {
+      alert(`Simulation — rien n'a été écrit ni envoyé.\n\n`
+        + `${r.brouillons} courriel(s), ${r.formulaires} formulaires.\n\n${detail}\n\n`
+        + `Signature : ${r.signature}`);
+      return;
+    }
+
+    // En mode recette, Graph n'est pas configuré : le serveur rend des .eml.
+    const replis = r.envois.filter((e) => e.voie === 'eml' && e.eml);
+    for (const e of replis) {
+      telechargerEml(`MATRICE_${dossier}_${e.destinataire.split('@')[0]}.eml`, e.eml);
+    }
+
+    alert(`${r.brouillons} brouillon(s) déposé(s), ${r.formulaires} formulaires.\n\n${detail}\n\n`
+      + `Signature : ${r.signature}\n`
+      + (replis.length
+        ? `\nGraph n'étant pas configuré, ${replis.length} fichier(s) .eml ont été téléchargés : `
+          + `ouvrez-les dans Outlook, relisez, et envoyez.`
+        : `\nLes brouillons sont dans votre boîte. Relisez avant d'envoyer.`));
+
+    await charger();
+  } catch (err) {
+    hint.className = 'hint blk';
+    hint.textContent = 'Échec : ' + err.message;
+    go.disabled = false; sim.disabled = false;
+  }
 }
 
 // ------------------------------------------------------------------ actions
