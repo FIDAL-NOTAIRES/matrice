@@ -628,6 +628,9 @@ function vueImport(r) {
             </select>
             <input id="code${i}" placeholder="code INSEE à 5 caractères" maxlength="5"
               style="display:none" autocomplete="off">
+            <input id="q${i}" placeholder="tapez le nom de la commune — les suggestions arrivent"
+              autocomplete="off">
+            <small id="etat${i}" style="display:block;color:var(--gris);font-size:11.5px;margin-top:4px"></small>
           </div>
         </div>`).join('')
       + `<div style="margin-top:12px"><button class="ghost" id="reprendre">Reprendre l’analyse</button></div>
@@ -670,7 +673,7 @@ function vueImport(r) {
   </div></div>`;
 }
 
-/** Les listes de précision : lecture des choix, puis nouvelle analyse. */
+/** Les listes de précision : recherche, lecture des choix, puis nouvelle analyse. */
 function cablerPrecisions() {
   document.querySelectorAll('.prec select').forEach((s, i) => {
     const champ = document.getElementById('code' + i);
@@ -680,6 +683,58 @@ function cablerPrecisions() {
       if (autre && champ) champ.focus();
     };
     s.onchange = maj; maj();
+
+    // La recherche libre : indispensable quand la commune a disparu — aucune
+    // proposition ne ressemblera jamais à LOMME — ou quand le nom du dossier
+    // est trop court pour que l'annuaire vise juste.
+    //
+    // Elle se déclenche à la frappe. Deux précautions, sans quoi on interroge
+    // l'annuaire de l'État à chaque lettre : un délai de repos de 300 ms, et
+    // l'abandon de la requête précédente dès qu'une nouvelle part. Une réponse
+    // en retard ne doit jamais écraser une plus récente — c'est ce qui fait
+    // qu'on croit avoir cherché « lille » et qu'on lit les résultats de « lil ».
+    const q = document.getElementById('q' + i);
+    const etat = document.getElementById('etat' + i);
+    if (!q) return;
+
+    let minuteur = null;
+    let jeton = 0;
+
+    const chercher = async () => {
+      const texte = q.value.trim();
+      if (texte.length < 2) { if (etat) etat.textContent = ''; return; }
+      const mien = ++jeton;
+      if (etat) etat.textContent = 'recherche…';
+      try {
+        const r = await api('/api/communes?q=' + encodeURIComponent(texte));
+        if (mien !== jeton) return; // une frappe plus récente a pris la main
+        const trouvees = r.communes || [];
+        if (etat) {
+          etat.textContent = trouvees.length
+            ? `${trouvees.length} commune${trouvees.length > 1 ? 's' : ''} — choisissez dans la liste`
+            : 'aucune commune de ce nom';
+        }
+        if (!trouvees.length) return;
+        // On REMPLACE les propositions plutôt que d'y ajouter : mélanger un
+        // résultat de recherche à des approchants automatiques rendrait la
+        // liste illisible au moment précis où il faut choisir juste.
+        const choisi = s.value;
+        s.innerHTML = '<option value="">— à préciser —</option>'
+          + trouvees.map((c) => `<option value="${e(c.code)}">${e(c.nom)}${
+              c.departement ? ' — ' + e(c.departement) : ''} · ${e(c.code)}</option>`).join('')
+          + '<option value="__autre">Autre — saisir le code INSEE</option>';
+        s.onchange = maj;
+        // Un choix déjà fait survit à une nouvelle frappe s'il figure encore.
+        if (choisi && [...s.options].some((o) => o.value === choisi)) s.value = choisi;
+        else if (trouvees.length === 1) s.value = trouvees[0].code;
+        maj();
+      } catch (err) {
+        if (mien === jeton && etat) etat.textContent = 'annuaire indisponible';
+      }
+    };
+
+    q.oninput = () => { clearTimeout(minuteur); minuteur = setTimeout(chercher, 300); };
+    q.onkeydown = (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); clearTimeout(minuteur); chercher(); } };
   });
 
   const b = document.getElementById('reprendre');
