@@ -42,7 +42,7 @@ function officeIncomplet() {
 export default protege(async (req, res, utilisateur, jetonDelegue) => {
   if (req.method !== 'POST') return res.status(405).json({ erreur: 'POST attendu' });
 
-  const { dossier, mandat, simulation, passeSignature } = req.body || {};
+  const { dossier, simulation, passeSignature } = req.body || {};
   if (!dossier) return res.status(400).json({ erreur: 'dossier obligatoire' });
 
   // Refus franc plutôt qu'un formulaire à moitié rempli. Le cadre « demandeur »
@@ -54,17 +54,6 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
       erreur: "identité de l'office incomplète",
       detail: 'Le cadre « demandeur » du formulaire serait lacunaire. Posez ces variables :',
       variables: manquants,
-    });
-  }
-
-  // Sans mandat, la demande change de nature juridique : elle redevient un
-  // accès ponctuel de tiers, et le plafond de l'article L. 107 A du LPF
-  // redevient opposable. On refuse plutôt que d'envoyer autre chose que prévu.
-  if (!mandat?.contenuBase64 || !mandat?.nom) {
-    return res.status(400).json({
-      erreur: 'mandat obligatoire',
-      detail: "Le régime mandataire suppose que le mandat accompagne chaque demande. "
-        + 'Fournissez { mandat: { nom, contenuBase64 } }.',
     });
   }
 
@@ -119,7 +108,17 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
 
     for (const [destinataire, g] of groupes) {
       // Un formulaire par commune, un courriel par service.
-      const pieces = [{ nom: mandat.nom, type: 'application/pdf', contenuBase64: mandat.contenuBase64 }];
+      //
+      // Aucun mandat n'est joint, et c'est conforme : le BOFiP, § 120 de
+      // BOI-CAD-DIFF-20-20-10-10, dispense « les notaires, les géomètres experts
+      // et les avocats en raison de leurs obligations professionnelles » de la
+      // production d'un mandat POUR TOUTES leurs demandes d'extraits de matrice.
+      // Le même paragraphe écarte pour eux le plafond de cinq par semaine.
+      //
+      // Le mandat n'est exigé que du mandataire ordinaire (§ 60). Exiger ici ce
+      // que l'administration n'exige pas ajouterait une pièce à réunir, un
+      // refus à contourner, et une phrase inexacte dans le courriel.
+      const pieces = [];
       for (const l of g.lignes) {
         const pdf = await remplirCerfa({
           demandeur: OFFICE,
@@ -138,8 +137,8 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
       }
 
       const objet = `Demandes d'extrait de matrice cadastrale — ${g.lignes.length} commune${g.lignes.length > 1 ? 's' : ''} — ${dossier}`;
-      const corps = redigerTexte(g, mandat);
-      const { html: corpsHtml, images: imagesEnLigne } = envelopper(redigerHtml(g, mandat));
+      const corps = redigerTexte(g);
+      const { html: corpsHtml, images: imagesEnLigne } = envelopper(redigerHtml(g));
 
       if (simulation) {
         rapport.push({ destinataire, service: g.service, formulaires: g.lignes.length, voie: 'simulation' });
@@ -152,7 +151,7 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
 
       const [ligneEnvoi] = await sql`
         INSERT INTO matrice_envoi (dossier, service_nom, destinataire, nb_formulaires, mandat_joint, envoye_par, message_id)
-        VALUES (${dossier}, ${g.service || 'service'}, ${destinataire}, ${g.lignes.length}, true, ${auteur}, ${envoi.id || null})
+        VALUES (${dossier}, ${g.service || 'service'}, ${destinataire}, ${g.lignes.length}, false, ${auteur}, ${envoi.id || null})
         RETURNING id
       `;
 
@@ -166,7 +165,7 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
           VALUES (${l.id}, ${dossier}, 'envoi',
                   ${JSON.stringify({
                     destinataire, service: g.service, voie: envoi.voie,
-                    mandat: mandat.nom, envoiId: ligneEnvoi.id,
+                    envoiId: ligneEnvoi.id,
                     signe: sceau.etat === 'signe',
                   })}::jsonb, ${auteur})
         `;
@@ -224,12 +223,14 @@ const assainir = (s) => String(s)
 //
 // La référence est R* 107 A-3 du LPF, et non L. 107 A : le I de cet article
 // pose le plafond de cinq demandes par semaine et par service, et son II, 1°
-// en exempte les titulaires de droits réels ET LEURS MANDATAIRES. C'est donc
-// la copie du mandat, jointe, qui rend recevables 23 demandes d'un seul coup.
-// Sans elle, l'exception ne joue pas : d'où le refus opposé par cette route
-// quand aucun mandat n'accompagne l'appel.
+// en exempte les titulaires de droits réels et leurs mandataires.
+//
+// Aucun mandat n'est joint, et ce n'est pas un oubli. Le BOFiP dispense les
+// notaires de le produire pour TOUTES leurs demandes d'extraits de matrice
+// (BOI-CAD-DIFF-20-20-10-10, § 120). Vérifié le 17 août 2026 — l'exigence
+// figurait dans les premières versions de MATRICE et n'avait pas lieu d'être.
 
-function phrases(g, mandat) {
+function phrases(g) {
   const l0 = g.lignes[0];
   const n = g.lignes.length;
   return {
@@ -241,15 +242,15 @@ function phrases(g, mandat) {
       + `de délivrance d'extraits de matrice cadastrale pour les communes suivantes, relevant de `
       + `votre service :`,
     pieces: `En conséquence je vous prie de trouver ci-joint ${n} formulaire${n > 1 ? 's' : ''} `
-      + `6815-EM-SD (un par commune concernée), et la copie du mandat qui m’a été donné par le `
-      + `titulaire de droits réels susvisé (pour répondre le cas échéant aux conditions posées par `
-      + `l’article R 107 A-3 du LPF).`,
+      + `6815-EM-SD, un par commune concernée. Ces demandes étant présentées en qualité de `
+      + `mandataire du titulaire de droits réels susvisé, les limites fixées au I de l’article `
+      + `R 107 A-3 du livre des procédures fiscales ne leur sont pas applicables.`,
     politesse: 'Vous remerciant par avance pour votre retour, je vous assure de mon profond respect.',
   };
 }
 
-export function redigerTexte(g, mandat) {
-  const t = phrases(g, mandat);
+export function redigerTexte(g) {
+  const t = phrases(g);
   return [
     t.ouverture, '',
     t.objet, '',
@@ -259,8 +260,8 @@ export function redigerTexte(g, mandat) {
   ].join('\n');
 }
 
-export function redigerHtml(g, mandat) {
-  const t = phrases(g, mandat);
+export function redigerHtml(g) {
+  const t = phrases(g);
   // Un paragraphe indenté par commune, et non une <ul> : Outlook réindente
   // les listes à sa façon et l'alignement saute d'un client à l'autre.
   const lignes = t.communes

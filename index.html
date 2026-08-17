@@ -342,7 +342,6 @@ function dessiner() {
         Elle n'est ni conservée ni journalisée. Vide, les demandes partent non signées.</small>
     </label>` : ''}
     <div class="actions">
-      <input type="file" id="mandat" accept="application/pdf" style="display:none">
       <button class="primaire" id="go" disabled>Envoyer ${r.courriels} courriel${r.courriels > 1 ? 's' : ''} · ${r.formulaires} formulaires</button>
       <button class="ghost" id="simuler">Simuler</button>
       <button class="ghost" id="rafraichir">Rafraîchir</button>
@@ -404,40 +403,8 @@ function blocAttente(l) {
 }
 
 // ------------------------------------------------------------------ envoi
-/**
- * Le mandat est demandé à chaque fois, y compris en simulation : c'est lui qui
- * pèse le plus lourd dans les pièces jointes, et mesurer sans lui ne mesurerait
- * rien d'utile. Le serveur refuse de toute façon sans lui.
- */
-function demanderMandat() {
-  return new Promise((resoudre) => {
-    const champ = document.getElementById('mandat');
-    champ.value = '';
-    champ.onchange = () => {
-      const f = champ.files?.[0];
-      if (!f) return resoudre(null);
-      const lecteur = new FileReader();
-      lecteur.onload = () => resoudre({ nom: f.name, contenuBase64: String(lecteur.result).split(',')[1] });
-      lecteur.onerror = () => resoudre(null);
-      lecteur.readAsDataURL(f);
-    };
-    champ.click();
-  });
-}
-
-/** Un .eml rendu par le repli : on le donne à télécharger, l'utilisateur l'ouvre dans Outlook. */
-function telechargerEml(nom, contenu) {
-  const url = URL.createObjectURL(new Blob([contenu], { type: 'message/rfc822' }));
-  const a = document.createElement('a');
-  a.href = url; a.download = nom; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
-}
-
 async function lancer(simulation) {
   const hint = document.getElementById('hint');
-  const mandat = await demanderMandat();
-  if (!mandat) { hint.textContent = 'Envoi annulé : aucun mandat joint.'; return; }
-
   const go = document.getElementById('go'), sim = document.getElementById('simuler');
   go.disabled = true; sim.disabled = true;
   hint.className = 'hint';
@@ -451,7 +418,7 @@ async function lancer(simulation) {
 
     const r = await api('/api/envoyer', {
       method: 'POST',
-      body: JSON.stringify({ dossier, mandat, simulation, passeSignature }),
+      body: JSON.stringify({ dossier, simulation, passeSignature }),
     });
     if (champPasse) champPasse.value = '';
 
