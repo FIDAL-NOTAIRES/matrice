@@ -94,6 +94,14 @@ textarea.coller{width:100%;min-height:190px;padding:12px 14px;border-radius:6px;
   border-radius:0 5px 5px 0;padding:12px 14px;margin-bottom:12px;font-size:13px}
 .pb h4{margin:0 0 7px;font-size:13px;color:#ff8fae}
 .pb ul{margin:0;padding-left:18px} .pb li{margin:3px 0}
+.prec{display:grid;grid-template-columns:minmax(140px,1fr) 2fr;gap:10px;align-items:start;
+  padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.prec:last-of-type{border-bottom:0}
+.prec .quoi b{display:block;font-size:14px}
+.prec .quoi small{display:block;color:var(--gris);font-size:11.5px;margin-top:2px}
+.prec select,.prec input{width:100%;padding:8px 10px;border-radius:5px;
+  border:1px solid rgba(255,255,255,.18);background:var(--nuit2);color:var(--txt);font:inherit;font-size:13.5px}
+.prec input{margin-top:7px}
 @media(max-width:700px){.champs{grid-template-columns:1fr}}
 .confirm input{margin-top:3px;width:16px;height:16px;accent-color:var(--ocre);cursor:pointer}
 .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
@@ -132,6 +140,9 @@ const e = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let pca = null, compte = null, jeton = null, vue = null;
+// Les arbitrages du notaire sur les communes que l'annuaire n'a pas su trancher.
+// Ils survivent aux analyses successives : on ne fait pas retaper deux fois.
+let precisions = {};
 // 'entra' quand l'inscription existe, 'recette' tant qu'elle n'existe pas.
 // Le serveur tranche vraiment ; ici on choisit seulement quoi demander à l'écran.
 let mode = 'entra', recette = { passe: null, initiales: null };
@@ -495,6 +506,7 @@ async function lancer(simulation) {
 // lit, résout les communes et route. L'écran ne fait qu'afficher ce qu'on lui
 // répond — y compris ce qu'il n'a pas compris.
 async function ecranImport() {
+  precisions = {};
   let propose = '';
   try { propose = (await api('/api/dossier?prochain=1')).propose || ''; } catch { /* sans gravité */ }
 
@@ -570,7 +582,7 @@ async function analyserPortefeuille(ecrire) {
   try {
     r = await api('/api/importer', {
       method: 'POST',
-      body: JSON.stringify({ dossier: num, societe, siren, texte, simulation: !ecrire }),
+      body: JSON.stringify({ dossier: num, societe, siren, texte, precisions, simulation: !ecrire }),
     });
   } catch (err) {
     hint.className = 'hint blk';
@@ -590,6 +602,7 @@ async function analyserPortefeuille(ecrire) {
   apercu.innerHTML = vueImport(r);
   const b = document.getElementById('creer');
   if (b) b.onclick = () => analyserPortefeuille(true);
+  cablerPrecisions();
 }
 
 function vueImport(r) {
@@ -598,10 +611,27 @@ function vueImport(r) {
 
   const pbs = [];
   if ((r.nonResolues || []).length) {
-    pbs.push(`<div class="pb"><h4>${r.nonResolues.length} commune(s) non identifiée(s) — l'import est bloqué</h4><ul>`
-      + r.nonResolues.map((l) => `<li><b>${e(l.nom_commune || '—')}</b> : ${e(l.motif)}`
-        + (l.candidats && l.candidats.length ? ` <span style="color:var(--gris)">— proche de : ${e(l.candidats.join(', '))}</span>` : '')
-        + `</li>`).join('') + '</ul></div>');
+    pbs.push(`<div class="pb"><h4>${r.nonResolues.length} commune(s) à préciser — l'import est bloqué</h4>
+      <p style="margin:0 0 10px;color:var(--gris);font-size:12.5px">MATRICE ne devine pas. Choisissez la
+      commune exacte, ou saisissez son code INSEE si elle ne figure pas dans la liste — c'est le cas
+      d'une commune absorbée, dont il faut donner le code de la commune d'accueil.</p>`
+      + r.nonResolues.map((l, i) => `
+        <div class="prec">
+          <div class="quoi"><b>${e(l.nom_commune || '—')}</b><small>${e(l.motif)}</small></div>
+          <div>
+            <select data-nom="${e(l.nom_commune || '')}" id="prec${i}">
+              <option value="">— à préciser —</option>
+              ${(l.candidats || []).map((c) => `<option value="${e(c.code)}"
+                 ${precisions[l.nom_commune] === c.code ? 'selected' : ''}>${e(c.nom)}${
+                 c.departement ? ' — ' + e(c.departement) : ''} · ${e(c.code)}</option>`).join('')}
+              <option value="__autre">Autre — saisir le code INSEE</option>
+            </select>
+            <input id="code${i}" placeholder="code INSEE à 5 caractères" maxlength="5"
+              style="display:none" autocomplete="off">
+          </div>
+        </div>`).join('')
+      + `<div style="margin-top:12px"><button class="ghost" id="reprendre">Reprendre l’analyse</button></div>
+      </div>`);
   }
   if ((r.anomalies || []).length) {
     pbs.push(`<div class="pb"><h4>${r.anomalies.length} ligne(s) non comprise(s)</h4><ul>`
@@ -638,6 +668,32 @@ function vueImport(r) {
       ? 'Corrigez les communes non identifiées, puis relancez l’analyse.'
       : 'Rien n’a encore été écrit.'}</span>
   </div></div>`;
+}
+
+/** Les listes de précision : lecture des choix, puis nouvelle analyse. */
+function cablerPrecisions() {
+  document.querySelectorAll('.prec select').forEach((s, i) => {
+    const champ = document.getElementById('code' + i);
+    const maj = () => {
+      const autre = s.value === '__autre';
+      if (champ) champ.style.display = autre ? 'block' : 'none';
+      if (autre && champ) champ.focus();
+    };
+    s.onchange = maj; maj();
+  });
+
+  const b = document.getElementById('reprendre');
+  if (!b) return;
+  b.onclick = () => {
+    document.querySelectorAll('.prec select').forEach((s, i) => {
+      const nom = s.dataset.nom;
+      const champ = document.getElementById('code' + i);
+      const code = s.value === '__autre' ? (champ?.value || '').trim().toUpperCase() : s.value;
+      // Un choix vide efface l'arbitrage précédent plutôt que de le figer.
+      if (code) precisions[nom] = code; else delete precisions[nom];
+    });
+    analyserPortefeuille(false);
+  };
 }
 
 // ------------------------------------------------------------------ actions

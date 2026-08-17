@@ -34,7 +34,7 @@ function referentiels() {
 export default protege(async (req, res, utilisateur) => {
   if (req.method !== 'POST') return res.status(405).json({ erreur: 'POST attendu' });
 
-  const { dossier, societe, siren, communes, texte, simulation } = req.body || {};
+  const { dossier, societe, siren, communes, texte, simulation, precisions } = req.body || {};
   if (!dossier || !societe) return res.status(400).json({ erreur: 'dossier et societe obligatoires' });
 
   // Deux entrées possibles. `communes` est le contrat machine — c'est par là
@@ -60,10 +60,18 @@ export default protege(async (req, res, utilisateur) => {
     entree = lecture.lignes;
   }
 
+  // Les précisions sont les arbitrages de l'humain sur les noms que l'annuaire
+  // n'a pas su trancher : « SAINT ANDRE » vaut 59527. Elles s'appliquent AVANT
+  // la résolution, et le code fourni passe ensuite le même contrôle que les
+  // autres — préciser n'est pas contourner.
+  const arbitrages = new Map(Object.entries(precisions || {})
+    .filter(([, code]) => /^(?:\d{5}|2[AB]\d{3})$/i.test(String(code || '').trim()))
+    .map(([nom, code]) => [String(nom), String(code).trim().toUpperCase()]));
+
   // Les lignes sans code INSEE doivent être résolues avant tout routage : le
   // référentiel SDIF se lit par code, jamais par nom.
   const { resolues, nonResolues } = await completer(entree.map((l) => ({
-    code_insee: l.code_insee || null,
+    code_insee: l.code_insee || arbitrages.get(String(l.nom_commune)) || null,
     nom_commune: l.nom_commune || null,
     nb_lots: Number(l.nb_lots) || 0,
   })));
@@ -160,6 +168,8 @@ export default protege(async (req, res, utilisateur) => {
                   commune: l.nom_commune, code: l.code_insee, lots: l.nb_lots,
                   statut: l.statut, destinataire: l.destinataire, motif: l.motif,
                   referentielDu: REF.pivoteLe,
+                  ...(arbitrages.has(String(l.nom_commune))
+                    ? { codePrecisePar: auteur } : {}),
                 })}::jsonb, ${auteur})
       `;
     }
