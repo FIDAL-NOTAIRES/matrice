@@ -1,12 +1,27 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
-    "api/relance.js": { "maxDuration": 60 },
-    "api/mettre-en-attente.js": { "maxDuration": 30 },
-    "api/importer.js": { "maxDuration": 60, "includeFiles": "data/**" },
-    "api/sante.js": { "maxDuration": 15, "includeFiles": "data/**" },
-    "api/dossier.js": { "maxDuration": 15 },
-    "api/envoyer.js": { "maxDuration": 300, "includeFiles": "data/**" }
+    "api/relance.js": {
+      "maxDuration": 60
+    },
+    "api/mettre-en-attente.js": {
+      "maxDuration": 30
+    },
+    "api/importer.js": {
+      "maxDuration": 60
+    },
+    "api/sante.js": {
+      "maxDuration": 15
+    },
+    "api/dossier.js": {
+      "maxDuration": 15
+    },
+    "api/envoyer.js": {
+      "maxDuration": 300
+    },
+    "api/communes.js": {
+      "maxDuration": 15
+    }
   },
   "crons": [
     {
