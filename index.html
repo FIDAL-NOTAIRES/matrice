@@ -196,10 +196,36 @@ function ecranConnexion() {
     <p style="margin-top:22px"><button class="primaire" id="cx">Se connecter</button></p></div>`;
   document.getElementById('cx').onclick = async () => {
     try {
-      const r = await pca.loginPopup({ scopes: [`api://${CONFIG.CLIENT_ID}/access_as_user`] });
+      const r = await pca.loginPopup(demandeConnexion());
       compte = r.account; await charger();
     } catch (err) { ecranSimple('Connexion refusée', e(err.message)); }
   };
+}
+
+/**
+ * Ce que la connexion demande.
+ *
+ * `scopes` obtient le jeton de NOTRE API — c'est lui que vérifie le verrou.
+ * `extraScopesToConsent` ne rapporte aucun jeton : il fait seulement consentir
+ * l'utilisateur à ce que MATRICE accède à sa messagerie EN SON NOM, côté
+ * serveur. Sans ce consentement, l'échange on-behalf-of échoue en AADSTS65001
+ * et le brouillon retombe en .eml.
+ *
+ * Le navigateur ne détient donc à aucun moment un jeton d'accès à la boîte :
+ * il autorise, il ne manipule pas.
+ */
+function demandeConnexion(extra = {}) {
+  return {
+    scopes: [`api://${CONFIG.CLIENT_ID}/access_as_user`],
+    extraScopesToConsent: ['https://graph.microsoft.com/Mail.ReadWrite'],
+    ...extra,
+  };
+}
+
+/** Rattrapage : le consentement à la messagerie manque, on le demande une fois. */
+async function consentirMessagerie() {
+  const r = await pca.loginPopup(demandeConnexion({ prompt: 'consent' }));
+  compte = r.account;
 }
 
 async function obtenirJeton() {
@@ -412,18 +438,33 @@ async function lancer(simulation) {
       return;
     }
 
-    // En mode recette, Graph n'est pas configuré : le serveur rend des .eml.
+    // Le serveur rend un .eml quand Graph n'a pas pu être joint. Le MOTIF est la
+    // seule chose qui permette de comprendre pourquoi — l'afficher a évité
+    // plusieurs allers-retours de diagnostic à l'aveugle.
     const replis = r.envois.filter((e) => e.voie === 'eml' && e.eml);
     for (const e of replis) {
       telechargerEml(`MATRICE_${dossier}_${e.destinataire.split('@')[0]}.eml`, e.eml);
     }
 
+    const motifs = [...new Set(r.envois.map((e) => e.motifRepli).filter(Boolean))];
+    const consentementManquant = motifs.some((m) => m.includes('AADSTS65001'));
+
     alert(`${r.brouillons} brouillon(s) déposé(s), ${r.formulaires} formulaires.\n\n${detail}\n\n`
       + `Signature : ${r.signature}\n`
       + (replis.length
-        ? `\nGraph n'étant pas configuré, ${replis.length} fichier(s) .eml ont été téléchargés : `
-          + `ouvrez-les dans Outlook, relisez, et envoyez.`
+        ? `\n${replis.length} fichier(s) .eml téléchargés : ouvrez-les dans Outlook, relisez, envoyez.`
+          + `\n\nMotif du repli :\n${motifs.join('\n\n')}`
         : `\nLes brouillons sont dans votre boîte. Relisez avant d'envoyer.`));
+
+    // Cas fréquent et réparable en un clic : l'utilisateur n'a jamais consenti à
+    // ce que MATRICE écrive dans sa messagerie. On le lui demande maintenant.
+    if (consentementManquant
+        && confirm(`MATRICE n'est pas autorisé à déposer un brouillon dans votre messagerie.\n\n`
+          + `Voulez-vous accorder cette autorisation maintenant ? Une fenêtre Microsoft s'ouvrira. `
+          + `Les demandes de ce dossier sont déjà parties en .eml — l'autorisation vaudra pour les suivantes.`)) {
+      try { await consentirMessagerie(); alert('Autorisation accordée. Le prochain envoi déposera le brouillon dans votre boîte.'); }
+      catch (err) { alert('Autorisation refusée : ' + err.message); }
+    }
 
     await charger();
   } catch (err) {
