@@ -19,7 +19,30 @@
 import { protege } from '../lib/verrou.js';
 
 const API = 'https://geo.api.gouv.fr/communes';
+const API_ASSOCIEES = 'https://geo.api.gouv.fr/communes_associees_deleguees';
 const CODE = /^(?:\d{5}|2[AB]\d{3})$/i;
+
+async function interroger(url) {
+  try {
+    const r = await fetch(url, {
+      headers: { Accept: 'application/json', 'User-Agent': 'MATRICE/1.0 (FIDAL Notaires)' },
+    });
+    if (r.status === 404) return [];
+    if (!r.ok) return null;
+    const brut = await r.json();
+    return Array.isArray(brut) ? brut : [brut].filter(Boolean);
+  } catch { return null; }
+}
+
+const forme = (c) => ({
+  code: c.code,
+  nom: c.nom,
+  departement: [
+    c.departement ? `${c.departement.nom} (${c.departement.code})` : null,
+    c.type === 'commune-associee' ? 'commune associée' : null,
+    c.type === 'commune-deleguee' ? 'commune déléguée' : null,
+  ].filter(Boolean).join(', ') || null,
+});
 
 export default protege(async (req, res) => {
   if (req.method !== 'GET') return res.status(405).json({ erreur: 'GET attendu' });
@@ -27,30 +50,30 @@ export default protege(async (req, res) => {
   const q = String(req.query?.q || '').trim();
   if (q.length < 2) return res.status(400).json({ erreur: 'recherche trop courte' });
 
-  // Un code INSEE saisi directement se vérifie plutôt qu'il ne se cherche.
-  const url = CODE.test(q)
-    ? `${API}/${encodeURIComponent(q.toUpperCase())}?fields=code,nom,departement`
-    : `${API}?nom=${encodeURIComponent(q)}&fields=code,nom,departement&boost=population&limit=25`;
+  // Deux annuaires, et il faut les deux. Les communes ASSOCIÉES et DÉLÉGUÉES
+  // — LOMME, rattachée à Lille — ne figurent pas dans le premier, alors que le
+  // cadastre les distingue et que les parcelles y sont référencées sous leur
+  // propre nom. Les omettre reviendrait à faire écrire LILLE là où le service
+  // attend LOMME.
+  const parCode = CODE.test(q);
+  const code = q.toUpperCase();
 
-  try {
-    const r = await fetch(url, {
-      headers: { Accept: 'application/json', 'User-Agent': 'MATRICE/1.0 (FIDAL Notaires)' },
-    });
-    if (r.status === 404) return res.status(200).json({ q, communes: [] });
-    if (!r.ok) return res.status(502).json({ erreur: `annuaire des communes indisponible (${r.status})` });
+  const [communes, associees] = await Promise.all([
+    interroger(parCode
+      ? `${API}/${encodeURIComponent(code)}?fields=code,nom,departement`
+      : `${API}?nom=${encodeURIComponent(q)}&fields=code,nom,departement&boost=population&limit=25`),
+    interroger(parCode
+      ? `${API_ASSOCIEES}?code=${encodeURIComponent(code)}&fields=code,nom,chefLieu,type,departement`
+      : `${API_ASSOCIEES}?nom=${encodeURIComponent(q)}&fields=code,nom,chefLieu,type,departement&limit=15`),
+  ]);
 
-    const brut = await r.json();
-    const liste = Array.isArray(brut) ? brut : [brut];
-
-    return res.status(200).json({
-      q,
-      communes: liste.filter(Boolean).map((c) => ({
-        code: c.code,
-        nom: c.nom,
-        departement: c.departement ? `${c.departement.nom} (${c.departement.code})` : null,
-      })),
-    });
-  } catch (e) {
-    return res.status(502).json({ erreur: `annuaire des communes injoignable : ${e.message}` });
+  if (communes === null && associees === null) {
+    return res.status(502).json({ erreur: 'annuaire des communes indisponible' });
   }
+
+  const vues = new Set();
+  const liste = [...(communes || []), ...(associees || [])]
+    .filter((c) => c && c.code && !vues.has(c.code) && vues.add(c.code));
+
+  return res.status(200).json({ q, communes: liste.map(forme) });
 });
