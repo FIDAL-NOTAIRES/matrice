@@ -18,18 +18,42 @@ import { deposerBrouillon } from '../lib/courriel.js';
 
 // L'identité du demandeur, c'est l'office. Elle ne vient pas de l'appelant :
 // un écran qui choisit qui demande pourrait demander au nom de n'importe qui.
+//
+// Aucune valeur par défaut. Un espace réservé qui ressemble à une vraie donnée
+// est exactement ce qu'on finit par ne plus voir — et il partirait à
+// l'administration sous le timbre de l'office.
 const OFFICE = {
-  nom: process.env.MATRICE_OFFICE_NOM || 'FIDAL NOTAIRES',
-  adresse: process.env.MATRICE_OFFICE_ADRESSE || '',
-  codePostal: process.env.MATRICE_OFFICE_CP || '',
-  commune: process.env.MATRICE_OFFICE_COMMUNE || 'PARIS',
+  nom: process.env.MATRICE_OFFICE_NOM,
+  adresse: process.env.MATRICE_OFFICE_ADRESSE,
+  codePostal: process.env.MATRICE_OFFICE_CP,
+  commune: process.env.MATRICE_OFFICE_COMMUNE,
 };
+
+/** Les quatre champs du cadre « demandeur » sont obligatoires, sans exception. */
+function officeIncomplet() {
+  const manquants = Object.entries(OFFICE)
+    .filter(([, v]) => !String(v || '').trim())
+    .map(([k]) => `MATRICE_OFFICE_${{ nom: 'NOM', adresse: 'ADRESSE', codePostal: 'CP', commune: 'COMMUNE' }[k]}`);
+  return manquants.length ? manquants : null;
+}
 
 export default protege(async (req, res, utilisateur, jetonDelegue) => {
   if (req.method !== 'POST') return res.status(405).json({ erreur: 'POST attendu' });
 
   const { dossier, mandat, simulation } = req.body || {};
   if (!dossier) return res.status(400).json({ erreur: 'dossier obligatoire' });
+
+  // Refus franc plutôt qu'un formulaire à moitié rempli. Le cadre « demandeur »
+  // du Cerfa identifie l'office auprès de l'administration : incomplet, la
+  // demande n'est plus celle qu'on croit faire.
+  const manquants = officeIncomplet();
+  if (manquants) {
+    return res.status(503).json({
+      erreur: "identité de l'office incomplète",
+      detail: 'Le cadre « demandeur » du formulaire serait lacunaire. Posez ces variables :',
+      variables: manquants,
+    });
+  }
 
   // Sans mandat, la demande change de nature juridique : elle redevient un
   // accès ponctuel de tiers, et le plafond de l'article L. 107 A du LPF
