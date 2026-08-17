@@ -203,29 +203,26 @@ function ecranConnexion() {
 }
 
 /**
- * Ce que la connexion demande.
+ * Ce que la connexion demande — et surtout ce qu'elle NE demande PAS.
  *
- * `scopes` obtient le jeton de NOTRE API — c'est lui que vérifie le verrou.
- * `extraScopesToConsent` ne rapporte aucun jeton : il fait seulement consentir
- * l'utilisateur à ce que MATRICE accède à sa messagerie EN SON NOM, côté
- * serveur. Sans ce consentement, l'échange on-behalf-of échoue en AADSTS65001
- * et le brouillon retombe en .eml.
+ * `scopes` obtient le jeton de NOTRE API : c'est lui que vérifie le verrou, et
+ * c'est tout ce qu'il faut pour entrer.
  *
- * Le navigateur ne détient donc à aucun moment un jeton d'accès à la boîte :
- * il autorise, il ne manipule pas.
+ * L'autorisation d'écrire dans la messagerie (Mail.ReadWrite, nécessaire à
+ * l'échange on-behalf-of) n'est délibérément PAS réclamée ici. Sur un tenant où
+ * le consentement utilisateur est désactivé — c'est le cas chez FIDAL —, la
+ * réclamer à la connexion rend l'approbation administrateur obligatoire pour
+ * seulement OUVRIR un dossier : refuser l'autorisation ferme l'application
+ * entière. Un confort ne doit jamais conditionner l'accès.
+ *
+ * Sans ce consentement, l'échange échoue en AADSTS65001 et le courriel part en
+ * .eml — ce qui est un mode de fonctionnement complet, pas une panne.
+ *
+ * Pour l'activer le jour où l'administrateur l'accorde, il suffit d'ajouter
+ * extraScopesToConsent: ['https://graph.microsoft.com/Mail.ReadWrite'] ci-dessous.
  */
 function demandeConnexion(extra = {}) {
-  return {
-    scopes: [`api://${CONFIG.CLIENT_ID}/access_as_user`],
-    extraScopesToConsent: ['https://graph.microsoft.com/Mail.ReadWrite'],
-    ...extra,
-  };
-}
-
-/** Rattrapage : le consentement à la messagerie manque, on le demande une fois. */
-async function consentirMessagerie() {
-  const r = await pca.loginPopup(demandeConnexion({ prompt: 'consent' }));
-  compte = r.account;
+  return { scopes: [`api://${CONFIG.CLIENT_ID}/access_as_user`], ...extra };
 }
 
 async function obtenirJeton() {
@@ -449,22 +446,21 @@ async function lancer(simulation) {
     const motifs = [...new Set(r.envois.map((e) => e.motifRepli).filter(Boolean))];
     const consentementManquant = motifs.some((m) => m.includes('AADSTS65001'));
 
-    alert(`${r.brouillons} brouillon(s) déposé(s), ${r.formulaires} formulaires.\n\n${detail}\n\n`
-      + `Signature : ${r.signature}\n`
-      + (replis.length
+    // Le repli .eml n'est pas une panne : il faut le dire, sinon chaque envoi
+    // ressemble à un échec. On ne montre le motif technique que lorsqu'il
+    // n'est PAS la cause connue et assumée.
+    const explication = replis.length === 0
+      ? '\nLes brouillons sont dans votre boîte. Relisez avant d’envoyer.'
+      : consentementManquant
         ? `\n${replis.length} fichier(s) .eml téléchargés : ouvrez-les dans Outlook, relisez, envoyez.`
-          + `\n\nMotif du repli :\n${motifs.join('\n\n')}`
-        : `\nLes brouillons sont dans votre boîte. Relisez avant d'envoyer.`));
+          + `\n\nLe dépôt direct dans votre boîte suppose une approbation de l’administrateur du`
+          + ` tenant, qui n’a pas été accordée. C’est le fonctionnement prévu en attendant, et`
+          + ` le message est identique dans les deux cas.`
+        : `\n${replis.length} fichier(s) .eml téléchargés : ouvrez-les dans Outlook, relisez, envoyez.`
+          + `\n\nMotif du repli :\n${motifs.join('\n\n')}`;
 
-    // Cas fréquent et réparable en un clic : l'utilisateur n'a jamais consenti à
-    // ce que MATRICE écrive dans sa messagerie. On le lui demande maintenant.
-    if (consentementManquant
-        && confirm(`MATRICE n'est pas autorisé à déposer un brouillon dans votre messagerie.\n\n`
-          + `Voulez-vous accorder cette autorisation maintenant ? Une fenêtre Microsoft s'ouvrira. `
-          + `Les demandes de ce dossier sont déjà parties en .eml — l'autorisation vaudra pour les suivantes.`)) {
-      try { await consentirMessagerie(); alert('Autorisation accordée. Le prochain envoi déposera le brouillon dans votre boîte.'); }
-      catch (err) { alert('Autorisation refusée : ' + err.message); }
-    }
+    alert(`${r.brouillons} brouillon(s) déposé(s), ${r.formulaires} formulaires.\n\n${detail}\n\n`
+      + `Signature : ${r.signature}\n${explication}`);
 
     await charger();
   } catch (err) {
