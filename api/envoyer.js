@@ -235,12 +235,14 @@ function phrases(g, mandat) {
   return {
     communes: g.lignes.map((l) => ({ nom: l.nom_commune, code: l.code_insee })),
     ouverture: 'Madame, Monsieur,',
-    objet: `Je me permets de vous écrire en qualité de mandataire de ${l0.societe}`
-      + `${l0.siren ? ` (SIREN ${l0.siren})` : ''}, et sollicite la délivrance `
-      + "d'extraits de matrice cadastrale pour les communes suivantes, relevant de votre service :",
+    objet: `Je vous écris à la demande et en qualité de mandataire de ${l0.societe}`
+      + `${l0.siren ? ` (SIREN ${l0.siren})` : ''}. Pour les besoins du traitement d'un dossier `
+      + `en cours, je vous serai reconnaissant de bien vouloir faire retour à la présente demande `
+      + `de délivrance d'extraits de matrice cadastrale pour les communes suivantes, relevant de `
+      + `votre service :`,
     pieces: `En conséquence je vous prie de trouver ci-joint ${n} formulaire${n > 1 ? 's' : ''} `
       + `6815-EM-SD (un par commune concernée), et la copie du mandat qui m’a été donné par le `
-      + `titulaire de droits réels (pour répondre le cas échéant aux conditions posées par `
+      + `titulaire de droits réels susvisé (pour répondre le cas échéant aux conditions posées par `
       + `l’article R 107 A-3 du LPF).`,
     politesse: 'Vous remerciant par avance pour votre retour, je vous assure de mon profond respect.',
   };
