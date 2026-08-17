@@ -15,6 +15,7 @@ import { neon } from '@neondatabase/serverless';
 import { protege, auteurDepuis } from '../lib/verrou.js';
 import { remplirCerfa, imagesDepuisEnv } from '../lib/cerfa.js';
 import { deposerBrouillon } from '../lib/courriel.js';
+import { envelopper, e as ech, p, vide } from '../lib/signature-mail.js';
 
 // L'identité du demandeur, c'est l'office. Elle ne vient pas de l'appelant :
 // un écran qui choisit qui demande pourrait demander au nom de n'importe qui.
@@ -120,14 +121,17 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
       }
 
       const objet = `Demandes d'extrait de matrice cadastrale — ${g.lignes.length} commune${g.lignes.length > 1 ? 's' : ''} — ${dossier}`;
-      const corps = rediger(g, dossier, mandat, maintenant);
+      const corps = redigerTexte(g, mandat);
+      const { html: corpsHtml, images: imagesEnLigne } = envelopper(redigerHtml(g, mandat));
 
       if (simulation) {
         rapport.push({ destinataire, service: g.service, formulaires: g.lignes.length, voie: 'simulation' });
         continue;
       }
 
-      const envoi = await deposerBrouillon({ objet, corps, destinataires: [destinataire], pieces, jetonDelegue });
+      const envoi = await deposerBrouillon({
+        objet, corps, corpsHtml, imagesEnLigne, destinataires: [destinataire], pieces, jetonDelegue,
+      });
 
       const [ligneEnvoi] = await sql`
         INSERT INTO matrice_envoi (dossier, service_nom, destinataire, nb_formulaires, mandat_joint, envoye_par, message_id)
@@ -180,34 +184,70 @@ const assainir = (s) => String(s)
   .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   .replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').toUpperCase();
 
-function rediger(g, dossier, mandat, date) {
-  const communes = g.lignes
-    .map((l) => `  • ${l.nom_commune} (${l.code_insee}) — ${l.nb_lots} lot${l.nb_lots > 1 ? 's' : ''}`)
+// ------------------------------------------------------------- rédaction
+//
+// Le message existe en deux versions qui doivent dire la même chose : le HTML,
+// que tout le monde verra, et le texte, que verra le client qui ne sait pas
+// lire le HTML. Une seule source pour les deux — les phrases ci-dessous —
+// afin qu'on ne corrige pas l'une en oubliant l'autre.
+//
+// Le bloc « FIDAL NOTAIRES / adresse / dossier » qui terminait le message a
+// disparu : la signature de l'office porte déjà l'adresse, et la mention de
+// confidentialité qu'elle contient dit ce que disait le paragraphe sur
+// l'usage des informations. Les écrire deux fois les affaiblit.
+
+// Texte arrêté par JFD le 17 août. Il est à la première personne : c'est le
+// notaire qui écrit, pas une machine au nom d'un office — et la signature qui
+// suit est la sienne.
+//
+// La référence est R* 107 A-3 du LPF, et non L. 107 A : le I de cet article
+// pose le plafond de cinq demandes par semaine et par service, et son II, 1°
+// en exempte les titulaires de droits réels ET LEURS MANDATAIRES. C'est donc
+// la copie du mandat, jointe, qui rend recevables 23 demandes d'un seul coup.
+// Sans elle, l'exception ne joue pas : d'où le refus opposé par cette route
+// quand aucun mandat n'accompagne l'appel.
+
+function phrases(g, mandat) {
+  const l0 = g.lignes[0];
+  const n = g.lignes.length;
+  return {
+    communes: g.lignes.map((l) => ({ nom: l.nom_commune, code: l.code_insee })),
+    ouverture: 'Madame, Monsieur,',
+    objet: `Je me permets de vous écrire en qualité de mandataire de ${l0.societe}`
+      + `${l0.siren ? ` (SIREN ${l0.siren})` : ''}, et sollicite la délivrance `
+      + "d'extraits de matrice cadastrale pour les communes suivantes, relevant de votre service :",
+    pieces: `En conséquence je vous prie de trouver ci-joint ${n} formulaire${n > 1 ? 's' : ''} `
+      + `6815-EM-SD (un par commune concernée), et la copie du mandat qui m’a été donné par le `
+      + `titulaire de droits réels (pour répondre le cas échéant aux conditions posées par `
+      + `l’article R 107 A-3 du LPF).`,
+    politesse: 'Vous remerciant par avance pour votre retour, je vous assure de mon profond respect.',
+  };
+}
+
+export function redigerTexte(g, mandat) {
+  const t = phrases(g, mandat);
+  return [
+    t.ouverture, '',
+    t.objet, '',
+    ...t.communes.map((c) => `  • ${c.nom} (${c.code})`), '',
+    t.pieces, '',
+    t.politesse,
+  ].join('\n');
+}
+
+export function redigerHtml(g, mandat) {
+  const t = phrases(g, mandat);
+  // Un paragraphe indenté par commune, et non une <ul> : Outlook réindente
+  // les listes à sa façon et l'alignement saute d'un client à l'autre.
+  const lignes = t.communes
+    .map((c) => p(`•&nbsp;&nbsp;${ech(c.nom)} (${ech(c.code)})`, 'margin-left:18.0pt'))
     .join('\n');
-  const societe = g.lignes[0].societe;
 
   return [
-    'Madame, Monsieur,',
-    '',
-    `L'office notarial ${OFFICE.nom}, agissant en qualité de mandataire de ${societe}`
-      + `${g.lignes[0].siren ? ` (SIREN ${g.lignes[0].siren})` : ''}, a l'honneur de solliciter`,
-    `la délivrance d'extraits de matrice cadastrale pour les communes suivantes, relevant de votre service :`,
-    '',
-    communes,
-    '',
-    `Vous trouverez ci-joint ${g.lignes.length} formulaire${g.lignes.length > 1 ? 's' : ''} 6815-EM-SD, un par commune,`,
-    `ainsi que le mandat justifiant de notre qualité (${mandat.nom}).`,
-    '',
-    "Les demandes étant présentées par un mandataire du propriétaire, le plafond de l'article",
-    "L. 107 A du livre des procédures fiscales n'y est pas applicable.",
-    '',
-    "Conformément au bloc de confidentialité du formulaire, les informations communiquées ne seront",
-    'utilisées que pour les besoins du dossier et ne seront pas conservées au-delà.',
-    '',
-    'Nous vous remercions par avance et vous prions d’agréer, Madame, Monsieur, l’expression de nos salutations distinguées.',
-    '',
-    `${OFFICE.nom}`,
-    OFFICE.adresse ? `${OFFICE.adresse}, ${OFFICE.codePostal} ${OFFICE.commune}` : OFFICE.commune,
-    `Dossier ${dossier} — ${date.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}`,
+    p(ech(t.ouverture)), vide(),
+    p(ech(t.objet)), vide(),
+    lignes, vide(),
+    p(ech(t.pieces)), vide(),
+    p(ech(t.politesse)), vide(),
   ].join('\n');
 }

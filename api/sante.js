@@ -12,6 +12,7 @@ import { neon } from '@neondatabase/serverless';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { prochaineRelance } from '../lib/jours-ouvres.js';
+import { signatureMail } from '../lib/signature-mail.js';
 
 const TABLES = ['matrice_demande', 'matrice_envoi', 'matrice_envoi_demande', 'matrice_journal'];
 
@@ -53,6 +54,15 @@ export default async function handler(req, res) {
       : "INCOMPLET — /api/envoyer refusera de générer (cadre « demandeur » lacunaire)",
     gabaritCerfa: existsSync(join(process.cwd(), 'data', '6815-em-sd_31.pdf'))
       ? 'présent' : 'ABSENT — data/6815-em-sd_31.pdf',
+    // Une signature absente ne casse rien : le courriel part sans habillage.
+    // C'est précisément pour ça qu'il faut le dire ici — personne ne le
+    // remarquerait autrement avant que le brouillon soit relu.
+    signatureCourriel: (() => {
+      const s = signatureMail();
+      if (!s.presente) return 'ABSENTE — data/signature/signature.html';
+      if (s.manquantes.length) return `INCOMPLÈTE — images manquantes : ${s.manquantes.join(', ')}`;
+      return `présente (${s.images.length} images)`;
+    })(),
     base: null,
     tables: null,
     file: null,
