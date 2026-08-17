@@ -403,6 +403,14 @@ function blocAttente(l) {
 }
 
 // ------------------------------------------------------------------ envoi
+/** Un .eml rendu par le repli : on le donne à télécharger, l'utilisateur l'ouvre dans Outlook. */
+function telechargerEml(nom, contenu) {
+  const url = URL.createObjectURL(new Blob([contenu], { type: 'message/rfc822' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = nom; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
 async function lancer(simulation) {
   const hint = document.getElementById('hint');
   const go = document.getElementById('go'), sim = document.getElementById('simuler');
