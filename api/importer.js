@@ -79,7 +79,7 @@ export default protege(async (req, res, utilisateur) => {
   // Un code fourni n'est pas un code valide. Le contrôle des communes disparues
   // ne doit pas s'appliquer aux seuls noms : c'est un code périmé, LOMME 59355,
   // qui avait traversé tout le routage sans être vu.
-  const { perimes, controleImpossible } = await verifierCodes(resolues.map((l) => l.code_insee));
+  const { perimes, noms, controleImpossible } = await verifierCodes(resolues.map((l) => l.code_insee));
   const perimesSet = new Set(perimes);
   const valides = resolues.filter((l) => !perimesSet.has(l.code_insee));
   for (const l of resolues.filter((l) => perimesSet.has(l.code_insee))) {
@@ -99,9 +99,23 @@ export default protege(async (req, res, utilisateur) => {
     });
   }
 
+  // Deux lignes peuvent désigner la même commune une fois les précisions
+  // appliquées : LOMME précisée en 59350 rejoint LILLE. Il faut les FUSIONNER
+  // avant tout routage — l'écriture en base se fait sur (dossier, code_insee),
+  // et la seconde ligne écraserait silencieusement les lots de la première.
+  const parCode = new Map();
+  for (const l of valides) {
+    const e = parCode.get(l.code_insee);
+    if (e) { e.nb_lots += l.nb_lots || 0; continue; }
+    // Le nom retenu est celui du Code officiel géographique, pas celui qui
+    // figurait dans le portefeuille — c'est lui qui sera imprimé sur le Cerfa.
+    parCode.set(l.code_insee, { ...l, nom_commune: noms.get(l.code_insee) || l.nom_commune });
+  }
+  const fusionnees = [...parCode.values()];
+
   const auteur = auteurDepuis(utilisateur);
   const { REF, CORR } = referentiels();
-  const resultat = routerPortefeuille(valides, REF, CORR);
+  const resultat = routerPortefeuille(fusionnees, REF, CORR);
 
   // La simulation rend exactement ce que l'écran affichera, sans rien écrire.
   // C'est ce qui permet de relire un portefeuille avant de l'engager.
