@@ -13,7 +13,8 @@
 
 import { neon } from '@neondatabase/serverless';
 import { protege, auteurDepuis } from '../lib/verrou.js';
-import { remplirCerfa, imagesDepuisEnv } from '../lib/cerfa.js';
+import { remplirCerfa } from '../lib/cerfa.js';
+import { imagesScellees } from '../lib/sceau.js';
 import { deposerBrouillon } from '../lib/courriel.js';
 import { envelopper, e as ech, p, vide } from '../lib/signature-mail.js';
 
@@ -41,7 +42,7 @@ function officeIncomplet() {
 export default protege(async (req, res, utilisateur, jetonDelegue) => {
   if (req.method !== 'POST') return res.status(405).json({ erreur: 'POST attendu' });
 
-  const { dossier, mandat, simulation } = req.body || {};
+  const { dossier, mandat, simulation, passeSignature } = req.body || {};
   if (!dossier) return res.status(400).json({ erreur: 'dossier obligatoire' });
 
   // Refus franc plutôt qu'un formulaire à moitié rempli. Le cadre « demandeur »
@@ -90,7 +91,23 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
       });
     }
 
-    const images = imagesDepuisEnv();
+    // La signature manuscrite est scellée : la phrase secrète de l'appelant est
+    // la clé qui l'ouvre, pas un mot de passe qu'on compare. Une phrase fausse
+    // arrête l'envoi — rendre des formulaires non signés à quelqu'un qui croit
+    // les avoir signés serait la pire des issues.
+    let sceau;
+    try {
+      sceau = imagesScellees(passeSignature);
+    } catch (e) {
+      if (e.phraseFausse) {
+        return res.status(403).json({
+          erreur: 'phrase de signature refusée',
+          detail: "Le bloc scellé n'a pas pu être ouvert. Rien n'a été généré ni envoyé.",
+        });
+      }
+      throw e;
+    }
+    const images = sceau.images;
     const maintenant = new Date();
     const groupes = new Map();
     for (const l of pretes) {
@@ -150,6 +167,7 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
                   ${JSON.stringify({
                     destinataire, service: g.service, voie: envoi.voie,
                     mandat: mandat.nom, envoiId: ligneEnvoi.id,
+                    signe: sceau.etat === 'signe',
                   })}::jsonb, ${auteur})
         `;
       }
@@ -167,7 +185,11 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
       simulation: Boolean(simulation),
       brouillons: rapport.length,
       formulaires: pretes.length,
-      signature: images.signature ? 'apposée' : 'ABSENTE — formulaires non signés',
+      signature: {
+        signe: 'apposée — formulaires signés',
+        sans_phrase: 'ABSENTE — formulaires non signés (aucune phrase de signature fournie)',
+        non_configure: 'ABSENTE — aucune signature scellée n’est déposée',
+      }[sceau.etat],
       envois: rapport,
     });
   } catch (e) {

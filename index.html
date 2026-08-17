@@ -76,6 +76,11 @@ h3.sec{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--
 .foot{position:sticky;bottom:0;margin-top:24px;background:rgba(10,23,38,.96);
   border-top:1px solid var(--ligne);padding:15px 0 6px;backdrop-filter:blur(6px)}
 .confirm{display:flex;gap:10px;align-items:flex-start;font-size:13px;margin-bottom:12px;cursor:pointer}
+.passe{display:block;margin:0 0 14px}
+.passe>span{display:block;font-size:12.5px;font-weight:600;margin-bottom:6px}
+.passe input{width:100%;max-width:420px;padding:9px 11px;border-radius:8px;
+  border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.28);color:inherit;font-size:14px}
+.passe small{display:block;font-size:11.5px;color:var(--gris);margin-top:6px;max-width:640px}
 .confirm input{margin-top:3px;width:16px;height:16px;accent-color:var(--ocre);cursor:pointer}
 .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 button{font:inherit;font-size:14px;font-weight:600;border-radius:5px;padding:11px 20px;cursor:pointer;border:1px solid transparent}
@@ -277,6 +282,13 @@ function dessiner() {
   <div class="foot">
     <label class="confirm"><input type="checkbox" id="ok">
       <span>J’ai lu la liste des destinataires et le détail des communes. Je confirme l’envoi sous ma responsabilité${r.enAttente ? ', et j’accepte que les communes en attente ne partent pas' : ''}.</span></label>
+    ${(v.sceau?.signature || v.sceau?.cachet) ? `
+    <label class="passe">
+      <span>Phrase de signature</span>
+      <input type="password" id="passeSig" autocomplete="off" placeholder="laisser vide pour des formulaires non signés">
+      <small>Elle déchiffre le fac-similé de votre signature, le temps de générer les formulaires.
+        Elle n'est ni conservée ni journalisée. Vide, les demandes partent non signées.</small>
+    </label>` : ''}
     <div class="actions">
       <input type="file" id="mandat" accept="application/pdf" style="display:none">
       <button class="primaire" id="go" disabled>Envoyer ${r.courriels} courriel${r.courriels > 1 ? 's' : ''} · ${r.formulaires} formulaires</button>
@@ -380,10 +392,16 @@ async function lancer(simulation) {
   hint.textContent = simulation ? 'Simulation en cours…' : 'Génération des formulaires…';
 
   try {
+    // La phrase ne sort pas d'ici autrement que dans cet appel, et le champ
+    // est vidé aussitôt : elle ne doit pas survivre à l'envoi dans le DOM.
+    const champPasse = document.getElementById('passeSig');
+    const passeSignature = champPasse?.value || undefined;
+
     const r = await api('/api/envoyer', {
       method: 'POST',
-      body: JSON.stringify({ dossier, mandat, simulation }),
+      body: JSON.stringify({ dossier, mandat, simulation, passeSignature }),
     });
+    if (champPasse) champPasse.value = '';
 
     const detail = r.envois.map((e) => `${e.formulaires} formulaires → ${e.destinataire}`).join('\n');
 

@@ -7,6 +7,7 @@
 import { neon } from '@neondatabase/serverless';
 import { protege } from '../lib/verrou.js';
 import { vueDossier } from '../lib/vue-dossier.js';
+import { sceauConfigure } from '../lib/sceau.js';
 
 export default protege(async (req, res) => {
   if (req.method !== 'GET') return res.status(405).json({ erreur: 'GET attendu' });
@@ -35,8 +36,14 @@ export default protege(async (req, res) => {
        ORDER BY envoye_le DESC LIMIT 1
     `;
 
+    // L'écran doit savoir s'il faut réclamer la phrase de signature. Deux
+    // booléens, jamais le contenu : la présence d'un sceau n'est pas un secret,
+    // sa clé si.
+    const sceau = sceauConfigure();
+
     return res.status(200).json({
       dossier,
+      sceau,
       ...vueDossier(lignes, { mandatJoint: precedent?.mandat_joint === true }),
     });
   } catch (e) {

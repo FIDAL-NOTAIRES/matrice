@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>MATRICE — sceller une signature</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root { --fond:#0d1520; --carte:#131f2e; --trait:rgba(255,255,255,.10);
+          --texte:#e8eef6; --gris:#93a4b8; --vert:#3fb27f; --orange:#e8a33d; --rouge:#e0574f; }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--fond); color:var(--texte);
+         font:15px/1.55 -apple-system,Segoe UI,Roboto,sans-serif; padding:32px 20px 80px }
+  main { max-width:760px; margin:0 auto }
+  h1 { font-size:22px; margin:0 0 4px }
+  .sous { color:var(--gris); margin:0 0 28px }
+  .carte { background:var(--carte); border:1px solid var(--trait); border-radius:12px;
+           padding:20px 22px; margin-bottom:18px }
+  .etape { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--gris); margin-bottom:10px }
+  label { display:block; font-weight:600; margin-bottom:6px }
+  input[type=password], input[type=file] { width:100%; padding:10px 12px; border-radius:8px;
+    border:1px solid var(--trait); background:#0b1420; color:var(--texte); font-size:15px }
+  small { color:var(--gris); display:block; margin-top:8px }
+  button { padding:11px 20px; border-radius:9px; border:1px solid var(--trait);
+    background:#1d5fd0; color:#fff; font-size:15px; font-weight:600; cursor:pointer }
+  button:disabled { background:rgba(255,255,255,.07); color:var(--gris); cursor:not-allowed }
+  button.copier { background:transparent; color:var(--texte) }
+  textarea { width:100%; height:150px; margin-top:12px; padding:12px; border-radius:8px;
+    border:1px solid var(--trait); background:#0b1420; color:var(--texte);
+    font:12px/1.5 ui-monospace,Menlo,Consolas,monospace; resize:vertical }
+  .avert { border-left:3px solid var(--orange); padding-left:14px; color:var(--gris); margin:22px 0 }
+  .ok { color:var(--vert) } .ko { color:var(--rouge) }
+  .apercu { max-width:340px; margin-top:12px; background:#fff; border-radius:6px; padding:8px }
+  .apercu img { display:block; width:100% }
+  .hors-ligne { font-size:13px; padding:10px 14px; border-radius:8px; margin-bottom:22px }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sceller une signature</h1>
+  <p class="sous">Chiffre le fac-similé de signature avant de le confier à MATRICE.</p>
+
+  <div class="hors-ligne carte" id="reseau"></div>
+
+  <div class="carte">
+    <div class="etape">Étape 1 sur 3</div>
+    <label for="fichier">L'image à sceller</label>
+    <input type="file" id="fichier" accept="image/png">
+    <small>Un PNG à fond transparent — la signature détourée, ou le cachet.
+      Le fichier est lu par cette page seule ; il n'est envoyé nulle part.</small>
+    <div class="apercu" id="apercu" hidden><img id="img" alt=""></div>
+  </div>
+
+  <div class="carte">
+    <div class="etape">Étape 2 sur 3</div>
+    <label for="phrase">La phrase secrète</label>
+    <input type="password" id="phrase" autocomplete="new-password" placeholder="au moins 12 caractères">
+    <label for="phrase2" style="margin-top:14px">La même, pour vérifier</label>
+    <input type="password" id="phrase2" autocomplete="new-password">
+    <small id="etatPhrase">Cette phrase sera demandée à chaque envoi signé. Elle n'est stockée
+      nulle part : ni ici, ni dans MATRICE, ni chez Vercel. Perdue, elle ne se retrouve pas —
+      il faudrait sceller l'image à nouveau.</small>
+  </div>
+
+  <div class="carte">
+    <div class="etape">Étape 3 sur 3</div>
+    <button id="go" disabled>Sceller</button>
+    <small id="msg"></small>
+    <textarea id="sortie" hidden readonly spellcheck="false"></textarea>
+    <div id="apres" hidden>
+      <button class="copier" id="copier" style="margin-top:12px">Copier le bloc</button>
+      <small>Colle-le dans Vercel → matrice → Settings → Environment Variables, sous le nom
+        <b>MATRICE_SIGNATURE_SCELLEE</b> (ou <b>MATRICE_CACHET_SCELLE</b> pour le cachet),
+        en Production et Preview. Cette variable peut rester en clair dans la configuration :
+        sans ta phrase, elle ne vaut rien.</small>
+    </div>
+  </div>
+
+  <div class="avert">
+    <b>Pourquoi cette page est un fichier local.</b> Le chiffrement se fait ici, dans ton
+    navigateur, par les fonctions cryptographiques du système. Ton image en clair et ta
+    phrase secrète ne quittent jamais ce poste — aucune requête réseau n'est émise, tu peux
+    le vérifier en coupant le wifi avant de cliquer.
+    <br><br>
+    PBKDF2-SHA256, 600 000 itérations, puis AES-256-GCM. Le sceau d'authentification fait
+    qu'une phrase fausse ne rend pas une image approximative : elle ne rend rien du tout.
+  </div>
+</main>
+
+<script>
+const MAGIE = new TextEncoder().encode('MATRICE1');
+const ITERATIONS = 600000;
+
+const $ = (id) => document.getElementById(id);
+let octetsImage = null;
+
+// Un rappel visible plutôt qu'une promesse dans la documentation.
+$('reseau').innerHTML = navigator.onLine
+  ? '<span style="color:var(--orange)">Tu es connecté au réseau. Cette page n\'émet aucune requête, ' +
+    'mais si tu veux t\'en assurer, coupe le wifi : tout fonctionne hors ligne.</span>'
+  : '<span class="ok">Hors ligne. Rien ne peut sortir de ce poste.</span>';
+
+$('fichier').onchange = async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  octetsImage = new Uint8Array(await f.arrayBuffer());
+  if (octetsImage[0] !== 0x89 || octetsImage[1] !== 0x50) {
+    octetsImage = null;
+    $('msg').innerHTML = '<span class="ko">Ce fichier n\'est pas un PNG.</span>';
+    return majBouton();
+  }
+  const url = URL.createObjectURL(f);
+  $('img').src = url; $('apercu').hidden = false;
+  $('msg').textContent = `${f.name} — ${(f.size / 1024).toFixed(1)} ko`;
+  majBouton();
+};
+
+function phraseValide() {
+  const a = $('phrase').value, b = $('phrase2').value;
+  if (!a) return null;
+  if (a.length < 12) return { ok: false, dit: 'Trop courte : au moins 12 caractères.' };
+  if (a !== b) return { ok: false, dit: 'Les deux saisies diffèrent.' };
+  return { ok: true, dit: 'Phrase acceptée.' };
+}
+
+function majBouton() {
+  const p = phraseValide();
+  if (p) {
+    $('etatPhrase').innerHTML = p.ok
+      ? '<span class="ok">' + p.dit + '</span>'
+      : '<span class="ko">' + p.dit + '</span>';
+  }
+  $('go').disabled = !(octetsImage && p && p.ok);
+}
+$('phrase').oninput = majBouton;
+$('phrase2').oninput = majBouton;
+
+$('go').onclick = async () => {
+  $('go').disabled = true;
+  $('msg').textContent = 'Dérivation de la clé (600 000 itérations, quelques secondes)…';
+  try {
+    const sel = crypto.getRandomValues(new Uint8Array(16));
+    const vecteur = crypto.getRandomValues(new Uint8Array(12));
+
+    const matiere = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode($('phrase').value), 'PBKDF2', false, ['deriveKey']);
+    const cle = await crypto.subtle.deriveKey(
+      { name: 'PBKDF2', salt: sel, iterations: ITERATIONS, hash: 'SHA-256' },
+      matiere, { name: 'AES-GCM', length: 256 }, false, ['encrypt']);
+
+    // WebCrypto place le sceau d'authentification à la fin du chiffré :
+    // c'est exactement ce qu'attend Node de l'autre côté.
+    const chiffre = new Uint8Array(await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv: vecteur }, cle, octetsImage));
+
+    const bloc = new Uint8Array(MAGIE.length + sel.length + vecteur.length + chiffre.length);
+    bloc.set(MAGIE, 0);
+    bloc.set(sel, MAGIE.length);
+    bloc.set(vecteur, MAGIE.length + sel.length);
+    bloc.set(chiffre, MAGIE.length + sel.length + vecteur.length);
+
+    let binaire = '';
+    for (const o of bloc) binaire += String.fromCharCode(o);
+    const base64 = btoa(binaire);
+
+    $('sortie').value = base64;
+    $('sortie').hidden = false;
+    $('apres').hidden = false;
+    $('msg').innerHTML = `<span class="ok">Scellé — ${(base64.length / 1024).toFixed(1)} ko de texte.</span>`;
+  } catch (e) {
+    $('msg').innerHTML = '<span class="ko">Échec : ' + e.message + '</span>';
+  }
+  $('go').disabled = false;
+};
+
+$('copier').onclick = async () => {
+  $('sortie').select();
+  try { await navigator.clipboard.writeText($('sortie').value); $('copier').textContent = 'Copié'; }
+  catch { document.execCommand('copy'); $('copier').textContent = 'Copié'; }
+  setTimeout(() => { $('copier').textContent = 'Copier le bloc'; }, 2000);
+};
+</script>
+</body>
+</html>

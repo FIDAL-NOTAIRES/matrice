@@ -13,6 +13,7 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { prochaineRelance } from '../lib/jours-ouvres.js';
 import { signatureMail } from '../lib/signature-mail.js';
+import { sceauConfigure } from '../lib/sceau.js';
 
 const TABLES = ['matrice_demande', 'matrice_envoi', 'matrice_envoi_demande', 'matrice_journal'];
 
@@ -57,6 +58,13 @@ export default async function handler(req, res) {
     // Une signature absente ne casse rien : le courriel part sans habillage.
     // C'est précisément pour ça qu'il faut le dire ici — personne ne le
     // remarquerait autrement avant que le brouillon soit relu.
+    // Présence seule : on ne déchiffre rien ici, et aucune phrase ne circule.
+    signatureManuscrite: (() => {
+      const s = sceauConfigure();
+      if (!s.signature && !s.cachet) return 'aucune — formulaires non signés';
+      return `scellée (${[s.signature && 'signature', s.cachet && 'cachet'].filter(Boolean).join(' + ')})`
+        + ' — phrase requise à chaque envoi';
+    })(),
     signatureCourriel: (() => {
       const s = signatureMail();
       if (!s.presente) return 'ABSENTE — data/signature/signature.html';
