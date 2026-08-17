@@ -9,6 +9,8 @@
 // rien qui relève du secret professionnel.
 
 import { neon } from '@neondatabase/serverless';
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { prochaineRelance } from '../lib/jours-ouvres.js';
 
 const TABLES = ['matrice_demande', 'matrice_envoi', 'matrice_envoi_demande', 'matrice_journal'];
@@ -25,7 +27,15 @@ export default async function handler(req, res) {
     AZURE_CLIENT_ID: Boolean(process.env.AZURE_CLIENT_ID),
     AZURE_CLIENT_SECRET: Boolean(process.env.AZURE_CLIENT_SECRET),
     MATRICE_BOITE_SERVICE: Boolean(process.env.MATRICE_BOITE_SERVICE),
+    MATRICE_MOT_DE_PASSE: Boolean(process.env.MATRICE_MOT_DE_PASSE),
+    MATRICE_OFFICE_NOM: Boolean(process.env.MATRICE_OFFICE_NOM),
+    MATRICE_OFFICE_ADRESSE: Boolean(process.env.MATRICE_OFFICE_ADRESSE),
+    MATRICE_OFFICE_CP: Boolean(process.env.MATRICE_OFFICE_CP),
+    MATRICE_OFFICE_COMMUNE: Boolean(process.env.MATRICE_OFFICE_COMMUNE),
   };
+
+  const officeComplet = config.MATRICE_OFFICE_NOM && config.MATRICE_OFFICE_ADRESSE
+    && config.MATRICE_OFFICE_CP && config.MATRICE_OFFICE_COMMUNE;
 
   const graphPret = config.AZURE_TENANT_ID && config.AZURE_CLIENT_ID
     && config.AZURE_CLIENT_SECRET && config.MATRICE_BOITE_SERVICE;
@@ -36,8 +46,13 @@ export default async function handler(req, res) {
     node: process.version,
     config,
     courriel: graphPret ? 'Graph configuré' : 'repli .eml (AZURE_* incomplets)',
-    verrou: (config.AZURE_TENANT_ID && config.AZURE_CLIENT_ID)
-      ? 'actif' : 'NON CONFIGURÉ — les routes protégées rendront 503',
+    verrou: (config.AZURE_TENANT_ID && config.AZURE_CLIENT_ID) ? 'Entra'
+      : config.MATRICE_MOT_DE_PASSE ? 'mot de passe (recette)'
+      : 'NON CONFIGURÉ — les routes protégées rendront 503',
+    office: officeComplet ? 'complet'
+      : "INCOMPLET — /api/envoyer refusera de générer (cadre « demandeur » lacunaire)",
+    gabaritCerfa: existsSync(join(process.cwd(), 'data', '6815-em-sd_31.pdf'))
+      ? 'présent' : 'ABSENT — data/6815-em-sd_31.pdf',
     base: null,
     tables: null,
     file: null,
