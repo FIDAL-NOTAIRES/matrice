@@ -112,12 +112,36 @@ Le `.eml` a été vérifié en relisant le message produit avec un parseur
 indépendant : objet accentué, corps UTF-8 et pièce jointe PDF restitués à
 l'identique.
 
+## L'inscription Entra, pas à pas
+
+C'est elle qui débloque le verrou, l'écran et le dépôt de brouillons.
+
+1. **Entra → Inscriptions d'applications → Nouvelle inscription.** Nom `MATRICE`,
+   comptes de cet annuaire uniquement.
+2. **Authentification → Ajouter une plateforme → Application monopage (SPA)**,
+   URI de redirection `https://matrice-black.vercel.app`. Le type SPA est important :
+   avec « Web », MSAL refusera le flux sans secret côté navigateur.
+3. **Exposer une API → Définir l'URI** (`api://<CLIENT_ID>`) **→ Ajouter une étendue**
+   nommée `access_as_user`, consentement administrateur et utilisateur.
+   C'est cette étendue qui donne au jeton l'audience que `lib/verrou.js` attend.
+   Sans elle, les jetons auront Microsoft Graph pour audience et seront rejetés —
+   à juste titre.
+4. **Autorisations d'API → Microsoft Graph → `Mail.ReadWrite`**, en déléguée
+   (envoi depuis la boîte du collaborateur) **et** en application (dépôt du cron
+   dans la boîte de service), cette dernière avec consentement administrateur.
+5. **Certificats et secrets → Nouveau secret client.** Sa valeur va dans
+   `AZURE_CLIENT_SECRET`. Elle n'est affichée qu'une fois.
+6. Reporter `TENANT_ID` et `CLIENT_ID` en haut de `index.html`, et les quatre
+   variables `AZURE_*` / `MATRICE_BOITE_SERVICE` dans Vercel.
+
 ## Ce qui reste à faire
 
-- Envelopper `api/mettre-en-attente.js` avec `protege()` — c'est une ligne, mais
-  elle n'est pas encore posée, la route est ouverte en l'état.
-- Poser le verrou côté écran : acquisition du jeton MSAL dans le navigateur.
+- **L'envoi lui-même.** L'écran affiche le bouton mais le dit franchement : il
+  reste à générer les formulaires 6815-EM-SD et à déposer le brouillon via
+  `deposerBrouillon()`. Tout ce qui précède — routage, file, relances, contrôles —
+  est opérationnel.
 - Les deux PNG signature et cachet, en variables d'environnement base64.
+  **Pas avant que le verrou soit posé et l'application fermée.**
 
 ## Ordre de déploiement
 

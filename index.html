@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MATRICE — Récapitulatif avant envoi</title>
+<style>
+:root{
+  --nuit:#0F2238; --nuit2:#16304d; --ocre:#E3CC7A;
+  --canard:#33838B; --orange:#FF982D; --carmin:#A01040;
+  --gris:#8798ab; --txt:#e8edf3; --ligne:rgba(227,204,122,.18);
+}
+*{box-sizing:border-box}
+body{margin:0;background:#0a1726;color:var(--txt);
+  font-family:"Segoe UI",-apple-system,BlinkMacSystemFont,Roboto,Helvetica,Arial,sans-serif;line-height:1.5}
+.app{max-width:920px;margin:0 auto;padding:26px 20px 90px}
+.bar{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;border-bottom:2px solid var(--ocre);padding-bottom:14px;margin-bottom:20px}
+.bar h1{margin:0;font-size:21px;font-weight:600}
+.bar .step{color:var(--ocre);font-size:11px;letter-spacing:.16em;text-transform:uppercase}
+.bar .meta{margin-left:auto;color:var(--gris);font-size:12.5px;text-align:right}
+.bar .meta b{color:var(--txt)}
+
+.banner{border-radius:6px;padding:15px 17px;margin-bottom:18px}
+.banner.go{background:linear-gradient(180deg,rgba(51,131,139,.18),rgba(51,131,139,.06));
+  border:1px solid rgba(51,131,139,.5);border-left:5px solid var(--canard)}
+.banner.stop{background:linear-gradient(180deg,rgba(160,16,64,.20),rgba(160,16,64,.07));
+  border:1px solid rgba(160,16,64,.55);border-left:5px solid var(--carmin)}
+.banner h2{margin:0 0 5px;font-size:15px}
+.banner.go h2{color:#7ad3db} .banner.stop h2{color:#ff8fae}
+.banner p{margin:0;font-size:13.5px}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.kpi{background:var(--nuit2);border:1px solid var(--ligne);border-radius:6px;padding:12px 14px}
+.kpi .n{font-size:26px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:11px;color:var(--gris);text-transform:uppercase;letter-spacing:.07em;margin-top:3px}
+.kpi.wait .n{color:var(--orange)} .kpi.ok .n{color:#7ad3db}
+
+h3.sec{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ocre);
+  margin:24px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--ligne)}
+
+.svc{background:var(--nuit2);border:1px solid var(--ligne);border-radius:6px;margin-bottom:12px;overflow:hidden}
+.svc.wait{border-color:rgba(255,152,45,.5)}
+.svc header{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.svc header .id{flex:1;min-width:0}
+.svc header h4{margin:0 0 3px;font-size:15px;font-weight:600}
+.svc header .mail{font-size:13px;color:#9fd8de;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
+.svc header .mail.none{color:#ffbe77;font-style:italic;font-family:inherit}
+.pill{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:4px 9px;border-radius:99px;white-space:nowrap}
+.p-ok{background:rgba(51,131,139,.22);color:#7ad3db;border:1px solid rgba(51,131,139,.55)}
+.p-wait{background:rgba(255,152,45,.18);color:#ffbe77;border:1px solid rgba(255,152,45,.6)}
+.svc .body{padding:12px 16px}
+.svc .count{font-size:12.5px;color:var(--gris);margin-bottom:9px}
+.coms{display:flex;flex-wrap:wrap;gap:6px}
+.com{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:4px;
+  padding:4px 9px;font-size:12.5px;display:flex;gap:7px;align-items:baseline}
+.com b{font-weight:600} .com i{font-style:normal;color:var(--gris);font-size:11px;font-variant-numeric:tabular-nums}
+.why{margin-top:11px;padding:11px 13px;background:rgba(255,152,45,.09);border-left:3px solid var(--orange);
+  border-radius:0 4px 4px 0;font-size:13px}
+.why b{color:#ffbe77}
+.relance{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:11px;font-size:12.5px;color:var(--gris)}
+.tag{background:rgba(255,152,45,.14);border:1px solid rgba(255,152,45,.4);color:#ffbe77;
+  border-radius:99px;padding:3px 10px;font-size:11.5px;font-weight:600}
+.acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+
+.checks{background:var(--nuit2);border:1px solid var(--ligne);border-radius:6px;padding:6px 16px}
+.chk{display:flex;gap:11px;align-items:flex-start;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)}
+.chk:last-child{border-bottom:0}
+.chk .ic{width:19px;height:19px;border-radius:4px;flex:none;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;margin-top:1px}
+.ic.ok{background:rgba(51,131,139,.25);color:#7ad3db;border:1px solid rgba(51,131,139,.6)}
+.ic.echec{background:rgba(160,16,64,.25);color:#ff8fae;border:1px solid rgba(160,16,64,.7)}
+.ic.avertissement{background:rgba(255,152,45,.2);color:#ffbe77;border:1px solid rgba(255,152,45,.6)}
+.chk .t{font-size:13.5px}
+.chk .t small{display:block;color:var(--gris);font-size:12px;margin-top:2px}
+
+.foot{position:sticky;bottom:0;margin-top:24px;background:rgba(10,23,38,.96);
+  border-top:1px solid var(--ligne);padding:15px 0 6px;backdrop-filter:blur(6px)}
+.confirm{display:flex;gap:10px;align-items:flex-start;font-size:13px;margin-bottom:12px;cursor:pointer}
+.confirm input{margin-top:3px;width:16px;height:16px;accent-color:var(--ocre);cursor:pointer}
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button{font:inherit;font-size:14px;font-weight:600;border-radius:5px;padding:11px 20px;cursor:pointer;border:1px solid transparent}
+button:disabled{cursor:not-allowed}
+.primaire{background:var(--ocre);color:var(--nuit);border-color:var(--ocre)}
+.primaire:disabled{background:rgba(255,255,255,.07);color:var(--gris);border-color:rgba(255,255,255,.12)}
+.ghost{background:transparent;color:var(--txt);border-color:rgba(255,255,255,.22);font-size:13px;padding:8px 14px}
+.ghost:hover{border-color:var(--ocre)}
+.hint{font-size:12.5px;color:var(--gris)} .hint.blk{color:#ff8fae}
+.centre{text-align:center;padding:70px 20px;color:var(--gris)}
+.centre h2{color:var(--txt);font-weight:600;font-size:19px;margin:0 0 10px}
+.centre code{background:rgba(255,255,255,.07);padding:2px 6px;border-radius:3px;font-size:12.5px}
+footer.src{margin-top:26px;padding-top:14px;border-top:1px solid var(--ligne);color:var(--gris);font-size:11.5px}
+@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.bar .meta{margin-left:0;text-align:left;width:100%}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="centre"><h2>Chargement…</h2></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@3.28.1/lib/msal-browser.min.js"></script>
+<script>
+// ---------------------------------------------------------------- configuration
+// À renseigner une fois l'inscription d'application créée dans Microsoft Entra.
+// Côté Entra : « Exposer une API » -> URI api://<CLIENT_ID> -> étendue access_as_user.
+// C'est cette étendue qui donne au jeton l'audience que le verrou serveur attend.
+const CONFIG = {
+  TENANT_ID: 'A_RENSEIGNER',
+  CLIENT_ID: 'A_RENSEIGNER',
+};
+
+const app = document.getElementById('app');
+const e = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+let pca = null, compte = null, jeton = null, vue = null;
+const dossier = new URLSearchParams(location.search).get('dossier');
+
+// ------------------------------------------------------------------ démarrage
+(async function () {
+  if (!dossier) return ecranSimple('Aucun dossier', 'Ajoutez <code>?dossier=2026-0417</code> à l’adresse.');
+  if (CONFIG.TENANT_ID === 'A_RENSEIGNER') {
+    return ecranSimple('Configuration incomplète',
+      'Renseignez <code>TENANT_ID</code> et <code>CLIENT_ID</code> en haut de <code>index.html</code>, '
+      + 'après avoir créé l’inscription d’application dans Entra.');
+  }
+
+  // Le CDN expose la bibliothèque sous window.msal ; notre instance s'appelle pca,
+  // sinon la variable locale masquerait la bibliothèque et rien ne s'initialiserait.
+  pca = new window.msal.PublicClientApplication({
+    auth: {
+      clientId: CONFIG.CLIENT_ID,
+      authority: `https://login.microsoftonline.com/${CONFIG.TENANT_ID}`,
+      redirectUri: location.origin,
+    },
+    cache: { cacheLocation: 'sessionStorage' },
+  });
+  await pca.initialize();
+
+  const comptes = pca.getAllAccounts();
+  if (comptes.length) { compte = comptes[0]; await charger(); }
+  else ecranConnexion();
+})().catch((err) => ecranSimple('Erreur au démarrage', e(err.message)));
+
+function ecranSimple(titre, html) {
+  app.innerHTML = `<div class="centre"><h2>${e(titre)}</h2><p>${html}</p></div>`;
+}
+
+function ecranConnexion() {
+  app.innerHTML = `<div class="centre"><h2>MATRICE</h2>
+    <p>Demandes d’extrait de matrice cadastrale — dossier ${e(dossier)}</p>
+    <p style="margin-top:22px"><button class="primaire" id="cx">Se connecter</button></p></div>`;
+  document.getElementById('cx').onclick = async () => {
+    try {
+      const r = await pca.loginPopup({ scopes: [`api://${CONFIG.CLIENT_ID}/access_as_user`] });
+      compte = r.account; await charger();
+    } catch (err) { ecranSimple('Connexion refusée', e(err.message)); }
+  };
+}
+
+async function obtenirJeton() {
+  const p = { scopes: [`api://${CONFIG.CLIENT_ID}/access_as_user`], account: compte };
+  try { return (await pca.acquireTokenSilent(p)).accessToken; }
+  catch { return (await pca.acquireTokenPopup(p)).accessToken; }
+}
+
+async function api(chemin, options = {}) {
+  jeton = await obtenirJeton();
+  const r = await fetch(chemin, {
+    ...options,
+    headers: { Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json', ...(options.headers || {}) },
+  });
+  const corps = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(corps.erreur || `HTTP ${r.status}`);
+  return corps;
+}
+
+async function charger() {
+  app.innerHTML = '<div class="centre"><h2>Chargement du dossier…</h2></div>';
+  try { vue = await api(`/api/dossier?dossier=${encodeURIComponent(dossier)}`); dessiner(); }
+  catch (err) { ecranSimple('Dossier illisible', e(err.message)); }
+}
+
+// -------------------------------------------------------------------- rendu
+function dessiner() {
+  const v = vue, r = v.resume;
+  const bloque = !v.envoiPossible;
+
+  const banniere = bloque
+    ? `<div class="banner stop"><h2>L’envoi est bloqué</h2><p>${e(v.bloquants.join(' · '))}. Rien ne partira tant que ce point n’est pas levé.</p></div>`
+    : `<div class="banner go"><h2>${r.formulaires} commune${r.formulaires > 1 ? 's' : ''} sur ${r.communes} ${r.formulaires > 1 ? 'partent' : 'part'} maintenant</h2>
+       <p>${r.enAttente ? `${r.enAttente} commune${r.enAttente > 1 ? 's' : ''} sans destinataire fiable : mise${r.enAttente > 1 ? 's' : ''} en file et relancée${r.enAttente > 1 ? 's' : ''} tous les 7 jours ouvrés, sans bloquer le reste.` : 'Aucune commune en attente.'}</p></div>`;
+
+  app.innerHTML = `
+  <div class="bar">
+    <span class="step">Étape 4 sur 4</span>
+    <h1>Récapitulatif avant envoi</h1>
+    <div class="meta">Dossier <b>${e(v.dossier)}</b> — ${e(v.societe)}<br>
+      ${v.siren ? 'SIREN ' + e(v.siren) + ' · ' : ''}connecté : ${e(compte?.username || '')}</div>
+  </div>
+  ${banniere}
+  <div class="kpis">
+    <div class="kpi"><div class="n">${r.lots}</div><div class="l">lots du portefeuille</div></div>
+    <div class="kpi"><div class="n">${r.communes}</div><div class="l">communes</div></div>
+    <div class="kpi ok"><div class="n">${r.courriels}</div><div class="l">courriel${r.courriels > 1 ? 's' : ''} · ${r.formulaires} formulaires</div></div>
+    <div class="kpi wait"><div class="n">${r.enAttente}</div><div class="l">en attente</div></div>
+  </div>
+
+  ${v.envois.length ? `<h3 class="sec">Ce qui part maintenant</h3>${v.envois.map(blocEnvoi).join('')}` : ''}
+  ${v.enAttente.length ? `<h3 class="sec">Ce qui reste en attente</h3>${v.enAttente.map(blocAttente).join('')}` : ''}
+  ${v.dejaParties.length ? `<h3 class="sec">Déjà parties</h3><div class="svc"><div class="body">
+      <div class="coms">${v.dejaParties.map(chip).join('')}</div></div></div>` : ''}
+
+  <h3 class="sec">Contrôles</h3>
+  <div class="checks">${v.controles.map((c) => `
+    <div class="chk"><span class="ic ${c.etat}">${c.etat === 'ok' ? '✓' : c.etat === 'echec' ? '✕' : '!'}</span>
+      <div class="t">${e(c.libelle)}${c.detail ? `<small>${e(c.detail)}</small>` : ''}</div></div>`).join('')}
+  </div>
+
+  <div class="foot">
+    <label class="confirm"><input type="checkbox" id="ok">
+      <span>J’ai lu la liste des destinataires et le détail des communes. Je confirme l’envoi sous ma responsabilité${r.enAttente ? ', et j’accepte que les communes en attente ne partent pas' : ''}.</span></label>
+    <div class="actions">
+      <button class="primaire" id="go" disabled>Envoyer ${r.courriels} courriel${r.courriels > 1 ? 's' : ''} · ${r.formulaires} formulaires</button>
+      <button class="ghost" id="rafraichir">Rafraîchir</button>
+      <span class="hint ${bloque ? 'blk' : ''}" id="hint"></span>
+    </div>
+  </div>
+
+  <footer class="src">Les décomptes, le routage et les contrôles viennent du serveur ; cet écran ne fait que les afficher.
+  Aucune règle n’est évaluée dans le navigateur.</footer>`;
+
+  document.getElementById('rafraichir').onclick = charger;
+  const ok = document.getElementById('ok'), go = document.getElementById('go'), hint = document.getElementById('hint');
+  const maj = () => {
+    go.disabled = bloque || !ok.checked;
+    hint.textContent = bloque ? `Bloqué : ${v.bloquants.join(', ')}`
+      : !ok.checked ? 'Cochez la confirmation pour activer l’envoi'
+      : `Prêt. ${r.courriels} courriel, ${r.formulaires} formulaires.`;
+    hint.className = 'hint' + (bloque ? ' blk' : '');
+  };
+  ok.onchange = maj; maj();
+
+  go.onclick = () => {
+    // L'envoi lui-même n'est pas encore branché : il suppose la génération des
+    // Cerfa et le dépôt de brouillon via Graph. Plutôt qu'un bouton qui ment,
+    // on le dit.
+    alert("L'envoi n'est pas encore branché.\n\nIl reste à générer les formulaires 6815-EM-SD "
+      + "et à déposer le brouillon via Graph. Tout le reste — routage, file d'attente, relances, "
+      + "contrôles — est opérationnel.");
+  };
+
+  app.querySelectorAll('[data-debloquer]').forEach((b) => { b.onclick = () => debloquer(b.dataset.debloquer, b.dataset.commune); });
+  app.querySelectorAll('[data-abandonner]').forEach((b) => { b.onclick = () => abandonner(b.dataset.abandonner, b.dataset.commune); });
+}
+
+const chip = (c) => `<span class="com"><b>${e(c.commune)}</b><i>${e(c.code)} · ${c.lots}</i></span>`;
+
+function blocEnvoi(env) {
+  return `<div class="svc">
+    <header><div class="id"><h4>${e(env.service || 'Service')}</h4>
+      <div class="mail">${e(env.destinataire)}</div></div>
+      <span class="pill p-ok">prêt</span></header>
+    <div class="body">
+      <div class="count"><b>1 courriel</b> · ${env.communes.length} formulaires 6815-EM-SD ·
+        ${env.communes.reduce((n, c) => n + (c.lots || 0), 0)} lots</div>
+      <div class="coms">${env.communes.map(chip).join('')}</div>
+    </div></div>`;
+}
+
+function blocAttente(l) {
+  return `<div class="svc wait">
+    <header><div class="id"><h4>${e(l.commune)} — ${e(l.departement)}</h4>
+      <div class="mail none">${e(l.service || 'service non identifié')}</div></div>
+      <span class="pill p-wait">en attente</span></header>
+    <div class="body">
+      <div class="count">${l.lots} lot${l.lots > 1 ? 's' : ''} · rien n’a été envoyé pour cette commune</div>
+      <div class="why"><b>Pourquoi elle attend.</b> ${e(l.motif || '')}</div>
+      <div class="relance"><span class="tag">Relance J+7 ouvrés</span>
+        <span>prochaine le <b>${e(l.prochaineRelance || '—')}</b>${l.relances ? ` · ${l.relances} rappel${l.relances > 1 ? 's' : ''} déjà envoyé${l.relances > 1 ? 's' : ''}` : ''}
+        ${l.telephone ? ` · appeler le <b>${e(l.telephone)}</b>` : ''}</span></div>
+      <div class="acts">
+        <button class="ghost" data-debloquer="${l.id}" data-commune="${e(l.commune)}">J’ai l’adresse</button>
+        <button class="ghost" data-abandonner="${l.id}" data-commune="${e(l.commune)}">Retirer du dossier</button>
+      </div>
+    </div></div>`;
+}
+
+// ------------------------------------------------------------------ actions
+async function debloquer(id, commune) {
+  const adresse = prompt(`Adresse du service pour ${commune} :\n\n`
+    + `Elle sera enregistrée telle quelle et la commune repartira dans un envoi de rattrapage.`);
+  if (!adresse) return;
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(adresse.trim())) return alert('Cette adresse ne ressemble pas à un courriel.');
+  try {
+    await api('/api/mettre-en-attente', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'debloquer', demandeId: Number(id), destinataire: adresse.trim() }),
+    });
+    await charger();
+  } catch (err) { alert('Échec : ' + err.message); }
+}
+
+async function abandonner(id, commune) {
+  const motif = prompt(`Retirer ${commune} du dossier. Motif :`);
+  if (!motif) return;
+  try {
+    await api('/api/mettre-en-attente', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'abandonner', demandeId: Number(id), motif: motif.trim() }),
+    });
+    await charger();
+  } catch (err) { alert('Échec : ' + err.message); }
+}
+</script>
+</body>
+</html>

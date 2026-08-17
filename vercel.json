@@ -12,6 +12,9 @@
     },
     "api/sante.js": {
       "maxDuration": 15
+    },
+    "api/dossier.js": {
+      "maxDuration": 15
     }
   },
   "crons": [
