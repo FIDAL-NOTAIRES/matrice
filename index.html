@@ -113,15 +113,20 @@ const e = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 let pca = null, compte = null, jeton = null, vue = null;
+// 'entra' quand l'inscription existe, 'recette' tant qu'elle n'existe pas.
+// Le serveur tranche vraiment ; ici on choisit seulement quoi demander à l'écran.
+let mode = 'entra', recette = { passe: null, initiales: null };
 const dossier = new URLSearchParams(location.search).get('dossier');
 
 // ------------------------------------------------------------------ démarrage
 (async function () {
   if (!dossier) return ecranSimple('Aucun dossier', 'Ajoutez <code>?dossier=2026-0417</code> à l’adresse.');
-  if (CONFIG.TENANT_ID === 'A_RENSEIGNER') {
-    return ecranSimple('Configuration incomplète',
-      'Renseignez <code>TENANT_ID</code> et <code>CLIENT_ID</code> en haut de <code>index.html</code>, '
-      + 'après avoir créé l’inscription d’application dans Entra.');
+  // Pas d'inscription Entra : on passe en recette, mot de passe partagé.
+  if (CONFIG.TENANT_ID === 'A_RENSEIGNER' || CONFIG.CLIENT_ID === 'A_RENSEIGNER') {
+    mode = 'recette';
+    const gardes = sessionStorage.getItem('matrice-recette');
+    if (gardes) { recette = JSON.parse(gardes); return charger(); }
+    return ecranRecette();
   }
 
   // Le CDN expose la bibliothèque sous window.msal ; notre instance s'appelle pca,
@@ -145,6 +150,41 @@ function ecranSimple(titre, html) {
   app.innerHTML = `<div class="centre"><h2>${e(titre)}</h2><p>${html}</p></div>`;
 }
 
+function ecranRecette() {
+  app.innerHTML = `<div class="centre"><h2>MATRICE</h2>
+    <p>Dossier ${e(dossier)} — <b style="color:var(--orange)">mode recette</b></p>
+    <p style="max-width:440px;margin:14px auto 0">L’inscription Entra n’est pas encore créée.
+      L’accès se fait par mot de passe partagé, et vos initiales accompagnent chaque action au journal.</p>
+    <div style="max-width:300px;margin:24px auto 0;display:flex;flex-direction:column;gap:10px">
+      <input id="passe" type="password" placeholder="Mot de passe" autocomplete="off"
+        style="padding:10px 12px;border-radius:5px;border:1px solid rgba(255,255,255,.22);
+               background:var(--nuit2);color:var(--txt);font:inherit;font-size:14px">
+      <input id="init" type="text" placeholder="Vos initiales (2 à 4 lettres)" maxlength="4" autocomplete="off"
+        style="padding:10px 12px;border-radius:5px;border:1px solid rgba(255,255,255,.22);
+               background:var(--nuit2);color:var(--txt);font:inherit;font-size:14px;text-transform:uppercase">
+      <button class="primaire" id="cx">Ouvrir le dossier</button>
+      <span class="hint blk" id="err"></span>
+    </div></div>`;
+
+  const passe = document.getElementById('passe'), init = document.getElementById('init');
+  const err = document.getElementById('err');
+  const aller = async () => {
+    const i = init.value.trim().toUpperCase();
+    if (!/^[A-Z]{2,4}$/.test(i)) { err.textContent = 'Initiales : 2 à 4 lettres.'; return; }
+    if (!passe.value) { err.textContent = 'Mot de passe requis.'; return; }
+    recette = { passe: passe.value, initiales: i };
+    try {
+      await charger();
+      // On ne retient les identifiants qu'une fois qu'ils ont ouvert quelque chose,
+      // et seulement pour la session : rien ne survit à la fermeture de l'onglet.
+      sessionStorage.setItem('matrice-recette', JSON.stringify(recette));
+    } catch { /* charger() a déjà affiché */ }
+  };
+  document.getElementById('cx').onclick = aller;
+  for (const champ of [passe, init]) champ.onkeydown = (ev) => { if (ev.key === 'Enter') aller(); };
+  passe.focus();
+}
+
 function ecranConnexion() {
   app.innerHTML = `<div class="centre"><h2>MATRICE</h2>
     <p>Demandes d’extrait de matrice cadastrale — dossier ${e(dossier)}</p>
@@ -163,14 +203,30 @@ async function obtenirJeton() {
   catch { return (await pca.acquireTokenPopup(p)).accessToken; }
 }
 
-async function api(chemin, options = {}) {
+async function entetes() {
+  if (mode === 'recette') {
+    return { 'x-matrice-passe': recette.passe, 'x-matrice-auteur': recette.initiales };
+  }
   jeton = await obtenirJeton();
+  return { Authorization: `Bearer ${jeton}` };
+}
+
+async function api(chemin, options = {}) {
   const r = await fetch(chemin, {
     ...options,
-    headers: { Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json', ...(options.headers || {}) },
+    headers: { ...(await entetes()), 'Content-Type': 'application/json', ...(options.headers || {}) },
   });
   const corps = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(corps.erreur || `HTTP ${r.status}`);
+  if (!r.ok) {
+    // Un mot de passe refusé doit ramener à l'écran de saisie, pas laisser
+    // l'utilisateur devant un message qu'il ne peut pas corriger.
+    if (mode === 'recette' && r.status === 401) {
+      sessionStorage.removeItem('matrice-recette');
+      ecranRecette();
+      document.getElementById('err').textContent = corps.erreur || 'Accès refusé.';
+    }
+    throw new Error(corps.erreur || `HTTP ${r.status}`);
+  }
   return corps;
 }
 
@@ -195,7 +251,9 @@ function dessiner() {
     <span class="step">Étape 4 sur 4</span>
     <h1>Récapitulatif avant envoi</h1>
     <div class="meta">Dossier <b>${e(v.dossier)}</b> — ${e(v.societe)}<br>
-      ${v.siren ? 'SIREN ' + e(v.siren) + ' · ' : ''}connecté : ${e(compte?.username || '')}</div>
+      ${v.siren ? 'SIREN ' + e(v.siren) + ' · ' : ''}${mode === 'recette'
+        ? `<span style="color:var(--orange)">recette</span> · ${e(recette.initiales)}`
+        : 'connecté : ' + e(compte?.username || '')}</div>
   </div>
   ${banniere}
   <div class="kpis">
