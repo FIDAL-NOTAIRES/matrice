@@ -14,6 +14,8 @@ import { join } from 'path';
 import { routerPortefeuille } from '../lib/routage.js';
 import { prochaineRelance } from '../lib/jours-ouvres.js';
 import { protege, auteurDepuis } from '../lib/verrou.js';
+import { analyser } from '../lib/portefeuille.js';
+import { completer, verifierCodes } from '../lib/communes.js';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 
@@ -32,15 +34,66 @@ function referentiels() {
 export default protege(async (req, res, utilisateur) => {
   if (req.method !== 'POST') return res.status(405).json({ erreur: 'POST attendu' });
 
-  const { dossier, societe, siren, communes, simulation } = req.body || {};
+  const { dossier, societe, siren, communes, texte, simulation } = req.body || {};
   if (!dossier || !societe) return res.status(400).json({ erreur: 'dossier et societe obligatoires' });
-  if (!Array.isArray(communes) || communes.length === 0) {
-    return res.status(400).json({ erreur: 'communes attendu : [{code_insee, nom_commune, nb_lots}]' });
+
+  // Deux entrées possibles. `communes` est le contrat machine — c'est par là
+  // qu'un orchestrateur poussera un portefeuille. `texte` est l'entrée humaine :
+  // ce qu'on colle depuis Excel, depuis REDPAR, ou les noms des dossiers Drive.
+  //
+  // La lecture du texte se fait ICI et non dans le navigateur : interpréter des
+  // données est une décision, et les décisions ne descendent pas dans l'écran.
+  let lecture = null;
+  let entree = communes;
+
+  if (!Array.isArray(entree) || entree.length === 0) {
+    if (!texte || !String(texte).trim()) {
+      return res.status(400).json({
+        erreur: 'portefeuille absent',
+        detail: 'Fournissez `communes` : [{code_insee, nom_commune, nb_lots}], ou `texte` à analyser.',
+      });
+    }
+    lecture = analyser(texte);
+    if (lecture.lignes.length === 0) {
+      return res.status(400).json({ erreur: 'aucune commune reconnue', anomalies: lecture.anomalies });
+    }
+    entree = lecture.lignes;
+  }
+
+  // Les lignes sans code INSEE doivent être résolues avant tout routage : le
+  // référentiel SDIF se lit par code, jamais par nom.
+  const { resolues, nonResolues } = await completer(entree.map((l) => ({
+    code_insee: l.code_insee || null,
+    nom_commune: l.nom_commune || null,
+    nb_lots: Number(l.nb_lots) || 0,
+  })));
+
+  // Un code fourni n'est pas un code valide. Le contrôle des communes disparues
+  // ne doit pas s'appliquer aux seuls noms : c'est un code périmé, LOMME 59355,
+  // qui avait traversé tout le routage sans être vu.
+  const { perimes, controleImpossible } = await verifierCodes(resolues.map((l) => l.code_insee));
+  const perimesSet = new Set(perimes);
+  const valides = resolues.filter((l) => !perimesSet.has(l.code_insee));
+  for (const l of resolues.filter((l) => perimesSet.has(l.code_insee))) {
+    nonResolues.push({
+      ...l,
+      motif: `code INSEE ${l.code_insee} inconnu du Code officiel géographique — commune fusionnée, `
+        + 'supprimée, ou code erroné',
+    });
+  }
+
+  if (valides.length === 0) {
+    return res.status(422).json({
+      erreur: 'aucune commune n’a pu être identifiée',
+      format: lecture?.format || 'fourni',
+      nonResolues,
+      anomalies: lecture?.anomalies || [],
+    });
   }
 
   const auteur = auteurDepuis(utilisateur);
   const { REF, CORR } = referentiels();
-  const resultat = routerPortefeuille(communes, REF, CORR);
+  const resultat = routerPortefeuille(valides, REF, CORR);
 
   // La simulation rend exactement ce que l'écran affichera, sans rien écrire.
   // C'est ce qui permet de relire un portefeuille avant de l'engager.
@@ -48,7 +101,25 @@ export default protege(async (req, res, utilisateur) => {
     return res.status(200).json({
       simulation: true,
       referentielDu: REF.pivoteLe,
+      format: lecture?.format || 'fourni',
+      anomalies: lecture?.anomalies || [],
+      nonResolues,
+      controleCommunes: controleImpossible
+        ? 'NON EFFECTUÉ — annuaire des communes injoignable ; les codes n’ont pas été vérifiés'
+        : 'codes vérifiés contre le Code officiel géographique',
       ...resultat,
+    });
+  }
+
+  // Écriture refusée tant qu'une commune reste non identifiée. Importer les
+  // autres en silence donnerait un dossier incomplet dont personne ne saurait
+  // qu'il l'est — c'est exactement ce que la règle du 15 août interdit.
+  if (nonResolues.length) {
+    return res.status(422).json({
+      erreur: 'communes non identifiées',
+      detail: 'Corrigez ces lignes, ou donnez leur code INSEE, puis relancez l’import.',
+      nonResolues,
+      anomalies: lecture?.anomalies || [],
     });
   }
 

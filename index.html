@@ -81,6 +81,20 @@ h3.sec{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--
 .passe input{width:100%;max-width:420px;padding:9px 11px;border-radius:8px;
   border:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.28);color:inherit;font-size:14px}
 .passe small{display:block;font-size:11.5px;color:var(--gris);margin-top:6px;max-width:640px}
+.champs{display:grid;grid-template-columns:1fr 2fr 1fr;gap:12px;margin-bottom:16px}
+.champ label{display:block;font-size:11.5px;color:var(--gris);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.champ input{width:100%;padding:10px 12px;border-radius:5px;border:1px solid rgba(255,255,255,.18);
+  background:var(--nuit2);color:var(--txt);font:inherit;font-size:14px}
+textarea.coller{width:100%;min-height:190px;padding:12px 14px;border-radius:6px;
+  border:1px solid rgba(255,255,255,.18);background:var(--nuit2);color:var(--txt);
+  font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+.aide{font-size:12.5px;color:var(--gris);margin:8px 0 14px}
+.aide b{color:var(--txt)}
+.pb{background:rgba(160,16,64,.12);border:1px solid rgba(160,16,64,.45);border-left:4px solid var(--carmin);
+  border-radius:0 5px 5px 0;padding:12px 14px;margin-bottom:12px;font-size:13px}
+.pb h4{margin:0 0 7px;font-size:13px;color:#ff8fae}
+.pb ul{margin:0;padding-left:18px} .pb li{margin:3px 0}
+@media(max-width:700px){.champs{grid-template-columns:1fr}}
 .confirm input{margin-top:3px;width:16px;height:16px;accent-color:var(--ocre);cursor:pointer}
 .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 button{font:inherit;font-size:14px;font-weight:600;border-radius:5px;padding:11px 20px;cursor:pointer;border:1px solid transparent}
@@ -124,13 +138,17 @@ let mode = 'entra', recette = { passe: null, initiales: null };
 const dossier = new URLSearchParams(location.search).get('dossier');
 
 // ------------------------------------------------------------------ démarrage
+// Sans dossier dans l'adresse, MATRICE n'est pas en panne : il attend qu'on lui
+// en donne un. C'est l'écran d'import — les étapes 1 à 3 que le récapitulatif
+// annonçait sans qu'elles existent.
+const demarrer = () => (dossier ? charger() : ecranImport());
+
 (async function () {
-  if (!dossier) return ecranSimple('Aucun dossier', 'Ajoutez <code>?dossier=2026-0417</code> à l’adresse.');
   // Pas d'inscription Entra : on passe en recette, mot de passe partagé.
   if (CONFIG.TENANT_ID === 'A_RENSEIGNER' || CONFIG.CLIENT_ID === 'A_RENSEIGNER') {
     mode = 'recette';
     const gardes = sessionStorage.getItem('matrice-recette');
-    if (gardes) { recette = JSON.parse(gardes); return charger(); }
+    if (gardes) { recette = JSON.parse(gardes); return demarrer(); }
     return ecranRecette();
   }
 
@@ -147,7 +165,7 @@ const dossier = new URLSearchParams(location.search).get('dossier');
   await pca.initialize();
 
   const comptes = pca.getAllAccounts();
-  if (comptes.length) { compte = comptes[0]; await charger(); }
+  if (comptes.length) { compte = comptes[0]; await demarrer(); }
   else ecranConnexion();
 })().catch((err) => ecranSimple('Erreur au démarrage', e(err.message)));
 
@@ -179,7 +197,7 @@ function ecranRecette() {
     if (!passe.value) { err.textContent = 'Mot de passe requis.'; return; }
     recette = { passe: passe.value, initiales: i };
     try {
-      await charger();
+      await demarrer();
       // On ne retient les identifiants qu'une fois qu'ils ont ouvert quelque chose,
       // et seulement pour la session : rien ne survit à la fermeture de l'onglet.
       sessionStorage.setItem('matrice-recette', JSON.stringify(recette));
@@ -197,7 +215,7 @@ function ecranConnexion() {
   document.getElementById('cx').onclick = async () => {
     try {
       const r = await pca.loginPopup(demandeConnexion());
-      compte = r.account; await charger();
+      compte = r.account; await demarrer();
     } catch (err) { ecranSimple('Connexion refusée', e(err.message)); }
   };
 }
@@ -468,6 +486,158 @@ async function lancer(simulation) {
     hint.textContent = 'Échec : ' + err.message;
     go.disabled = false; sim.disabled = false;
   }
+}
+
+
+// ------------------------------------------------------------ écran d'import
+//
+// Rien n'est interprété ici : le texte collé part tel quel au serveur, qui le
+// lit, résout les communes et route. L'écran ne fait qu'afficher ce qu'on lui
+// répond — y compris ce qu'il n'a pas compris.
+async function ecranImport() {
+  let propose = '';
+  try { propose = (await api('/api/dossier?prochain=1')).propose || ''; } catch { /* sans gravité */ }
+
+  app.innerHTML = `
+  <div class="bar">
+    <span class="step">Étape 1 sur 4</span>
+    <h1>Nouveau dossier</h1>
+    <div class="meta">${mode === 'recette'
+      ? `<span style="color:var(--orange)">recette</span>`
+      : 'connecté : ' + e(compte?.username || '')}</div>
+  </div>
+
+  <div class="champs">
+    <div class="champ"><label for="num">Numéro de dossier</label>
+      <input id="num" value="${e(propose)}" autocomplete="off"></div>
+    <div class="champ"><label for="soc">Société</label>
+      <input id="soc" placeholder="LOGIS METROPOLE" autocomplete="off"></div>
+    <div class="champ"><label for="sir">SIREN</label>
+      <input id="sir" placeholder="886980440" autocomplete="off" inputmode="numeric"></div>
+  </div>
+
+  <h3 class="sec">Le portefeuille</h3>
+  <textarea class="coller" id="txt" spellcheck="false" placeholder="Collez ici — ou déposez un fichier .csv / .txt"></textarea>
+  <p class="aide">Trois formes acceptées, MATRICE reconnaît laquelle il reçoit.
+    <b>Un tableau</b> copié depuis Excel ou REDPAR, avec le code INSEE — c'est la forme la plus sûre.
+    <b>Les noms des dossiers Drive</b> du client, <code>0199_ATTICHES_6 PLACE DES LANDAUS</code> —
+    un dossier compte pour un lot, et les communes sont résolues contre le Code officiel géographique.
+    <b>Une simple liste</b> de communes ou de codes.</p>
+
+  <div class="actions">
+    <input type="file" id="fic" accept=".csv,.txt,.tsv,text/plain" style="display:none">
+    <button class="primaire" id="analyser">Analyser</button>
+    <button class="ghost" id="parcourir">Déposer un fichier</button>
+    <span class="hint" id="hint"></span>
+  </div>
+
+  <div id="apercu"></div>
+
+  <footer class="src">Rien n'est écrit tant que vous n'avez pas validé. L'analyse et le routage
+  se font sur le serveur ; cet écran ne fait que les afficher.</footer>`;
+
+  const hint = document.getElementById('hint');
+  document.getElementById('parcourir').onclick = () => document.getElementById('fic').click();
+  document.getElementById('fic').onchange = async (ev) => {
+    const f = ev.target.files[0];
+    if (!f) return;
+    document.getElementById('txt').value = await f.text();
+    hint.textContent = `${f.name} chargé — vérifiez, puis Analyser.`;
+  };
+  document.getElementById('analyser').onclick = () => analyserPortefeuille(false);
+}
+
+function champsImport() {
+  const dossier = document.getElementById('num').value.trim();
+  const societe = document.getElementById('soc').value.trim();
+  const siren = document.getElementById('sir').value.replace(/\s/g, '');
+  const texte = document.getElementById('txt').value;
+  return { dossier, societe, siren: siren || null, texte };
+}
+
+async function analyserPortefeuille(ecrire) {
+  const hint = document.getElementById('hint');
+  const apercu = document.getElementById('apercu');
+  const { dossier: num, societe, siren, texte } = champsImport();
+
+  if (!num || !societe) { hint.className = 'hint blk'; hint.textContent = 'Numéro de dossier et société sont obligatoires.'; return; }
+  if (!texte.trim()) { hint.className = 'hint blk'; hint.textContent = 'Collez le portefeuille, ou déposez un fichier.'; return; }
+
+  hint.className = 'hint';
+  hint.textContent = ecrire ? 'Création du dossier…' : 'Analyse et routage…';
+
+  let r;
+  try {
+    r = await api('/api/importer', {
+      method: 'POST',
+      body: JSON.stringify({ dossier: num, societe, siren, texte, simulation: !ecrire }),
+    });
+  } catch (err) {
+    hint.className = 'hint blk';
+    hint.textContent = 'Échec : ' + err.message;
+    return;
+  }
+
+  if (ecrire) {
+    location.href = `?dossier=${encodeURIComponent(num)}`;
+    return;
+  }
+
+  const alerte = String(r.controleCommunes || '').startsWith('NON');
+  hint.className = 'hint' + (alerte ? ' blk' : '');
+  hint.textContent = `Lu comme : ${r.format}. Référentiel SDIF du ${r.referentielDu}. `
+    + `Communes : ${r.controleCommunes || '—'}.`;
+  apercu.innerHTML = vueImport(r);
+  const b = document.getElementById('creer');
+  if (b) b.onclick = () => analyserPortefeuille(true);
+}
+
+function vueImport(r) {
+  const res = r.resume || {};
+  const bloque = (r.nonResolues || []).length > 0;
+
+  const pbs = [];
+  if ((r.nonResolues || []).length) {
+    pbs.push(`<div class="pb"><h4>${r.nonResolues.length} commune(s) non identifiée(s) — l'import est bloqué</h4><ul>`
+      + r.nonResolues.map((l) => `<li><b>${e(l.nom_commune || '—')}</b> : ${e(l.motif)}`
+        + (l.candidats && l.candidats.length ? ` <span style="color:var(--gris)">— proche de : ${e(l.candidats.join(', '))}</span>` : '')
+        + `</li>`).join('') + '</ul></div>');
+  }
+  if ((r.anomalies || []).length) {
+    pbs.push(`<div class="pb"><h4>${r.anomalies.length} ligne(s) non comprise(s)</h4><ul>`
+      + r.anomalies.map((a) => `<li>ligne ${a.ligne} — ${e(a.motif)} : <code>${e(a.texte.slice(0, 70))}</code></li>`).join('')
+      + '</ul></div>');
+  }
+
+  return `
+  <h3 class="sec">Ce que MATRICE a compris</h3>
+  <div class="kpis">
+    <div class="kpi"><div class="n">${res.lots ?? '—'}</div><div class="l">lots</div></div>
+    <div class="kpi"><div class="n">${res.communes ?? '—'}</div><div class="l">communes</div></div>
+    <div class="kpi ok"><div class="n">${res.courriels ?? (r.envois || []).length}</div>
+      <div class="l">courriel${((r.envois || []).length) > 1 ? 's' : ''} · ${res.pretes ?? res.formulaires ?? '—'} formulaires</div></div>
+    <div class="kpi wait"><div class="n">${(r.enAttente || []).length}</div><div class="l">en attente</div></div>
+  </div>
+  ${pbs.join('')}
+  ${(r.envois || []).map((s) => `<div class="svc"><header><div class="id">
+      <h4>${e(s.serviceNom || s.service || 'Service')}</h4>
+      <div class="mail">${e(s.destinataire)}</div></div>
+      <span class="pill p-ok">${(s.communes || []).length} formulaires</span></header>
+      <div class="body"><div class="coms">${(s.communes || []).map((c) =>
+        `<span class="com"><b>${e(c.nom_commune)}</b><i>${e(c.code_insee)} · ${c.nb_lots}</i></span>`).join('')}</div></div></div>`).join('')}
+  ${(r.enAttente || []).length ? `<h3 class="sec">Ce qui entrera en file d'attente</h3>`
+    + r.enAttente.map((l) => `<div class="svc wait"><header><div class="id">
+        <h4>${e(l.nom_commune)} — ${e(l.departement || '')}</h4>
+        <div class="mail none">destinataire à établir</div></div>
+        <span class="pill p-wait">en attente</span></header>
+        <div class="body"><div class="why">${e(l.motif || '')}</div></div></div>`).join('') : ''}
+
+  <div class="foot"><div class="actions">
+    <button class="primaire" id="creer" ${bloque ? 'disabled' : ''}>Créer le dossier</button>
+    <span class="hint ${bloque ? 'blk' : ''}">${bloque
+      ? 'Corrigez les communes non identifiées, puis relancez l’analyse.'
+      : 'Rien n’a encore été écrit.'}</span>
+  </div></div>`;
 }
 
 // ------------------------------------------------------------------ actions

@@ -13,9 +13,24 @@ export default protege(async (req, res) => {
   if (req.method !== 'GET') return res.status(405).json({ erreur: 'GET attendu' });
 
   const dossier = req.query?.dossier;
-  if (!dossier) return res.status(400).json({ erreur: 'paramètre dossier obligatoire' });
-
   const sql = neon(process.env.DATABASE_URL);
+
+  // ?prochain=1 — le numéro que l'écran d'import proposera. Proposé, pas imposé :
+  // le numéro fait le lien avec la gestion de l'étude, c'est le notaire qui sait.
+  // Calculé sur le seul millésime courant, pour qu'un vieux dossier mal numéroté
+  // ne fasse pas dériver la série.
+  if (req.query?.prochain) {
+    const annee = new Date().getFullYear();
+    const [d] = await sql`
+      SELECT max(substring(dossier from '\\d{4}$'))::int AS dernier
+        FROM matrice_demande
+       WHERE dossier LIKE ${`${annee}-%`}
+    `;
+    const suivant = (d?.dernier || 0) + 1;
+    return res.status(200).json({ propose: `${annee}-${String(suivant).padStart(4, '0')}` });
+  }
+
+  if (!dossier) return res.status(400).json({ erreur: 'paramètre dossier obligatoire' });
 
   try {
     const lignes = await sql`
