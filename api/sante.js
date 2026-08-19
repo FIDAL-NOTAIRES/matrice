@@ -14,6 +14,11 @@ import { join } from 'path';
 import { prochaineRelance } from '../lib/jours-ouvres.js';
 import { signatureMail } from '../lib/signature-mail.js';
 import { sceauConfigure } from '../lib/sceau.js';
+// Importé pour que Vercel embarque le gabarit dans CETTE fonction. Le traçage
+// suit les imports : un existsSync sur le chemin ne fait rien embarquer, et le
+// témoin annonçait « ABSENT » sur une chaîne qui générait très bien. Voir le
+// préambule de lib/cerfa.js.
+import { gabaritPresent, FICHIER as CERFA_FICHIER } from '../lib/cerfa.js';
 
 const TABLES = ['matrice_demande', 'matrice_envoi', 'matrice_envoi_demande', 'matrice_journal'];
 
@@ -115,8 +120,7 @@ export default async function handler(req, res) {
       : 'NON CONFIGURÉ — les routes protégées rendront 503',
     office: officeComplet ? 'complet'
       : "INCOMPLET — /api/envoyer refusera de générer (cadre « demandeur » lacunaire)",
-    gabaritCerfa: existsSync(join(process.cwd(), 'data', '6815-em-sd_31.pdf'))
-      ? 'présent' : 'ABSENT — data/6815-em-sd_31.pdf',
+    gabaritCerfa: gabaritPresent() ? 'présent' : `ABSENT — data/${CERFA_FICHIER}`,
     // Une signature absente ne casse rien : le courriel part sans habillage.
     // C'est précisément pour ça qu'il faut le dire ici — personne ne le
     // remarquerait autrement avant que le brouillon soit relu.
