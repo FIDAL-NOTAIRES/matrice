@@ -5,7 +5,7 @@
   "description": "MATRICE — demandes d'extrait de matrice cadastrale (FIDAL Notaires)",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": "24.x"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
