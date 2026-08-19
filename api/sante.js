@@ -9,13 +9,51 @@
 // rien qui relève du secret professionnel.
 
 import { neon } from '@neondatabase/serverless';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { prochaineRelance } from '../lib/jours-ouvres.js';
 import { signatureMail } from '../lib/signature-mail.js';
 import { sceauConfigure } from '../lib/sceau.js';
 
 const TABLES = ['matrice_demande', 'matrice_envoi', 'matrice_envoi_demande', 'matrice_journal'];
+
+// Version de corrections.json que lib/routage.js sait lire. Un écart ici
+// bloque tous les envois, volontairement : mieux vaut une file d'attente
+// visible qu'un routage faux en silence.
+const CORRECTIONS_VERSION_ATTENDUE = 4;
+
+// Le 19 août, un déploiement portait encore le squelette du 15 : 44,6 ko au
+// lieu de 103. Rien ne le signalait, et la production routait avec l'ancien
+// référentiel. D'où ce bloc — l'écart se voit maintenant en deux secondes.
+function referentielCorrige() {
+  const chemin = join(process.cwd(), 'data', 'corrections.json');
+  if (!existsSync(chemin)) return { etat: 'ABSENT — data/corrections.json' };
+  try {
+    const brut = readFileSync(chemin, 'utf8');
+    const c = JSON.parse(brut);
+    const version = Number(c.version || 0);
+    const compatible = version === CORRECTIONS_VERSION_ATTENDUE;
+    const s = c.synthese || {};
+    return {
+      etat: compatible ? 'compatible' : `INCOMPATIBLE — version ${version || 'inconnue'}, `
+        + `attendu ${CORRECTIONS_VERSION_ATTENDUE} : aucun envoi ne sera autorisé`,
+      version: version || null,
+      misAJourLe: c.misAJourLe || null,
+      octets: brut.length,
+      services: s.services ?? null,
+      servicesAvecAdresse: s.servicesAvecAdresse ?? null,
+      communes: s.communes ?? null,
+      communesExploitables: s.communesExploitables ?? null,
+      communesATrouver: s.communesATrouver ?? null,
+      communesARepartir: s.communesARepartir ?? null,
+      exceptionsFigees: s.exceptionsFigees ?? null,
+      reservesNonLevees: Object.entries(c.reserves || {})
+        .filter(([, r]) => r?.levee !== true).length,
+    };
+  } catch (e) {
+    return { etat: `ILLISIBLE — ${e.name}` };
+  }
+}
 
 export default async function handler(req, res) {
   const t0 = Date.now();
@@ -48,11 +86,22 @@ export default async function handler(req, res) {
   const echangePret = config.AZURE_TENANT_ID && config.AZURE_CLIENT_ID && config.AZURE_CLIENT_SECRET;
   const graphPret = echangePret && config.MATRICE_BOITE_SERVICE;
 
+  const referentiel = referentielCorrige();
+
   const rapport = {
     service: 'MATRICE',
     le: new Date().toISOString(),
     node: process.version,
+    // La région ne se constate pas depuis l'interface Vercel autrement qu'en
+    // croyant un réglage. Ici, elle est lue à l'exécution. La région de BUILD
+    // reste iad1 et n'est pas modifiable : ne pas la confondre avec celle-ci.
+    execution: {
+      region: process.env.VERCEL_REGION || null,
+      environnement: process.env.VERCEL_ENV || null,
+      commit: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 7) || null,
+    },
     config,
+    referentielCorrige: referentiel,
     courriel: {
       envoi: echangePret
         ? 'Graph — brouillon déposé dans la boîte du collaborateur (on-behalf-of)'
@@ -122,7 +171,11 @@ export default async function handler(req, res) {
       rapport.file = f;
     }
 
-    rapport.etat = (manquantes.length === 0 && config.CRON_SECRET) ? 'operationnel' : 'incomplet';
+    // Un référentiel incompatible n'empêche pas la base de répondre, mais il
+    // empêche tout envoi : il compte donc dans l'état d'ensemble.
+    const referentielOk = referentiel.etat === 'compatible';
+    rapport.etat = (manquantes.length === 0 && config.CRON_SECRET && referentielOk)
+      ? 'operationnel' : 'incomplet';
     rapport.ms = Date.now() - t0;
     return res.status(rapport.etat === 'operationnel' ? 200 : 503).json(rapport);
   } catch (e) {

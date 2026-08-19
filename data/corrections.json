@@ -1,1143 +1,2644 @@
 {
- "version": 1,
- "misAJourLe": "2026-08-15",
- "primeSur": "sdif-departements.json",
- "mode_emploi": "Table manuelle des adresses de courriel des services des impôts fonciers. Prime sur sdif-departements.json. Ordre de résolution : (1) communes[codeINSEE] ; (2) departements[dep] si `fiable` vaut true ; (3) le référentiel moissonné. Un département dont au moins un service n'a pas d'adresse publiée est traité comme non fiable : toutes ses communes attendent, parce que le référentiel ne dit pas quel service couvre quelle commune. Le pointage téléphonique lève la réserve en posant `fiable: true` sur le département.",
- "regles": {
-  "jamaisDeReconstitutionParMotif": true,
-  "mettreEnAttenteSiDestinataireIncertain": true,
-  "reserveNonLeveeVautCourrielAbsent": true,
-  "unDepartementAvecUnServiceMuetEstNonFiable": true
- },
- "reserves": {
-  "pelh.620.boulogne-sur-mer@dgfip.finances.gouv.fr": {
-   "departement": "62",
-   "nomDepartement": "Pas-de-Calais",
-   "motif": "PELH = pôle d'évaluation des locaux d'habitation : ce n'est pas le guichet de la matrice, à confirmer avant tout envoi",
-   "levee": false,
-   "confirmeLe": null,
-   "confirmePar": null,
-   "effet": "tant que levee vaut false, ce courriel est traité comme absent"
+  "version": 4,
+  "misAJourLe": "2026-08-19",
+  "primeSur": "sdif-departements.json",
+  "remplace": "corrections.json v3, non deposee : 11,4 Mo, les 36 223 communes figees une a une",
+  "sources": [
+    "sdif-referentiel.json — annuaire DILA remoissonne le 19/08/2026, 136 services",
+    "compétence géographique des services locaux (DILA) — 36 223 rattachements",
+    "classeur de pointage telephonique de l'assistante, 85 lignes"
+  ],
+  "regleDeResolution": [
+    "1. communesExceptions[codeINSEE] s'il existe : liste d'indices dans services[]",
+    "2. sinon departements[dep].services : liste d'indices dans services[]",
+    "3. un seul service ET son courriel non nul : envoi autorise",
+    "4. tout autre cas : file d'attente. Jamais de rabattement sur une autre boite."
+  ],
+  "regles": {
+    "jamaisDeReconstitutionParMotif": true,
+    "bloquerSiCourrielNull": true,
+    "reserveNonLeveeVautCourrielNull": true,
+    "bloquerSiPlusieursGuichetsCompetents": true
   },
-  "centre.des.impots.foncier.basse-terre@dgi.finances.gouv.fr": {
-   "departement": "971",
-   "nomDepartement": "Guadeloupe",
-   "motif": "domaine historique dgi.finances.gouv.fr, probablement périmé : à confirmer",
-   "levee": false,
-   "confirmeLe": null,
-   "confirmePar": null,
-   "effet": "tant que levee vaut false, ce courriel est traité comme absent"
-  }
- },
- "departements": {
-  "62": {
-   "nomDepartement": "Pas-de-Calais",
-   "statutReferentiel": "boite_unique",
-   "statutReel": "a_trouver",
-   "motif": "Statut boite_unique trompeur : 3 services sur 4 sans adresse, tous rabattus sur le PELH de Boulogne-sur-Mer, qui n'est pas le guichet de la matrice.",
-   "services": [
-    {
-     "id": "3e144566-d070-461f-8e94-c67c95477314",
-     "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Arras",
-     "courriel": null,
-     "source": null,
-     "verifieLe": null,
-     "verifiePar": null,
-     "telephone": [
-      "03 21 24 68 68"
-     ],
-     "adressePostale": [
-      "10 rue Diderot, CS 80020, 62034 Arras Cedex"
-     ]
+  "etatsAdresse": {
+    "absente": "aucune adresse : file d'attente",
+    "connue": "adresse obtenue, non confirmee par le service",
+    "delivree_non_confirmee": "message de confirmation delivre sans rebond, sans reponse",
+    "confirmee": "confirmee par retour de message du service"
+  },
+  "synthese": {
+    "services": 136,
+    "servicesAvecAdresse": 114,
+    "communes": 36223,
+    "communesExploitables": 22472,
+    "communesATrouver": 3096,
+    "communesARepartir": 10655,
+    "exceptionsFigees": 25,
+    "departementsARepartitionReelle": [
+      "02",
+      "39",
+      "51",
+      "52",
+      "79"
+    ]
+  },
+  "avertissement": "Sur 31 departements a plusieurs guichets, 5 seulement sont reellement repartis commune par commune (02, 39, 51, 52, 79). Les 26 autres declarent tous leurs guichets en face de chaque commune : c'est le defaut deja constate au paragraphe 9.2 du memo, herite de la source et non introduit par la moisson. La question a poser a ces departements reste 'quelles communes relevent de votre guichet'.",
+  "reserves": {
+    "sdif.allier@dgsip.finances.gouv.fr": {
+      "departement": "03",
+      "nomDepartement": null,
+      "motif": "domaine dgsip inexistant : coquille probable pour dgfip, a confirmer",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent",
+      "adressesBrutes": [
+        "sdif.allier@dgsip.finances.gouv.fr"
+      ],
+      "origine": "pointage telephonique",
+      "serviceVise": "(SDIF) Allier - Cusset"
     },
-    {
-     "id": "c1755fe9-5969-45ef-b3e5-49a0a6ccdbc5",
-     "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Boulogne-sur-Mer",
-     "courriel": null,
-     "source": null,
-     "verifieLe": null,
-     "verifiePar": null,
-     "telephone": [
-      "03 21 10 29 29"
-     ],
-     "adressePostale": [
-      "Centre des finances publiques, 26 rue d'Aumont, CS 50639, 62321 Boulogne-sur-Mer cedex"
-     ]
+    "sdif2b@dgfip,finances,gouv,fr": {
+      "departement": "2B",
+      "nomDepartement": null,
+      "motif": "adresse mal formee : virgules au lieu de points dans le domaine",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent",
+      "adressesBrutes": [
+        "sdif2b@dgfip,finances,gouv,fr"
+      ],
+      "origine": "pointage telephonique",
+      "serviceVise": "(SDIF) Haute-Corse - Bastia"
     },
-    {
-     "id": "c1db920d-eba4-4dd3-b9be-20efe3e414ac",
-     "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Lens",
-     "courriel": null,
-     "source": null,
-     "verifieLe": null,
-     "verifiePar": null,
-     "telephone": [
-      "03 21 08 10 10"
-     ],
-     "adressePostale": [
-      "Centre des finances publiques, 7 rue Louis Armand, CS 80017, 62307 Lens Cedex"
-     ]
+    "sdif30@dgsip.finances.gouv.fr": {
+      "departement": "30",
+      "nomDepartement": null,
+      "motif": "domaine dgsip inexistant : coquille probable pour dgfip, a confirmer",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent",
+      "adressesBrutes": [
+        "sdif30@dgsip.finances.gouv.fr"
+      ],
+      "origine": "pointage telephonique",
+      "serviceVise": "(SDIF) Gard - Nimes"
     },
-    {
-     "id": "4b26fe85-2513-43fe-9586-8ec55e874f2f",
-     "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Saint-Omer",
-     "courriel": null,
-     "source": null,
-     "verifieLe": null,
-     "verifiePar": null,
-     "telephone": [
-      "03 21 98 76 76"
-     ],
-     "adressePostale": [
-      "Centre des finances publiques, 1 allée Honoré-de-Balzac, BP 30009, 62967 Longuenesse Cedex"
-     ]
+    "sdif.1044.pelp@dgsip.finances.gouv.fr": {
+      "departement": "44",
+      "nomDepartement": null,
+      "motif": "domaine dgsip inexistant : coquille probable pour dgfip, a confirmer",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent",
+      "adressesBrutes": [
+        "sdif.1044.pelp@dgsip.finances.gouv.fr"
+      ],
+      "origine": "pointage telephonique",
+      "serviceVise": "(SDIF) Loire-Atlantique"
+    },
+    "sdif.770.melun@dgsip.finances.gouv.fr": {
+      "departement": "77",
+      "nomDepartement": null,
+      "motif": "domaine dgsip inexistant : coquille probable pour dgfip, a confirmer",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent",
+      "adressesBrutes": [
+        "sdif.770.melun@dgsip.finances.gouv.fr"
+      ],
+      "origine": "pointage telephonique",
+      "serviceVise": "Service departemental des Impots Fonciers (SDIF) Seine-et-Marne - Meaux"
+    },
+    "ptgc.yvelines@dgsip.finances.gouv.fr": {
+      "departement": "78",
+      "nomDepartement": null,
+      "motif": "domaine dgsip inexistant : coquille probable pour dgfip, a confirmer",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent",
+      "adressesBrutes": [
+        "ptgc.yvelines@dgsip.finances.gouv.fr"
+      ],
+      "origine": "pointage telephonique",
+      "serviceVise": "(SDIF) Yvelines - Rambouillet"
+    },
+    "ptgc.tarn@dgsip.finances.gouv.fr": {
+      "departement": "81",
+      "nomDepartement": null,
+      "motif": "domaine dgsip inexistant : coquille probable pour dgfip, a confirmer",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent",
+      "adressesBrutes": [
+        "ptgc.tarn@dgsip.finances.gouv.fr"
+      ],
+      "origine": "pointage telephonique",
+      "serviceVise": "(SDIF) Tarn - Castres"
+    },
+    "sdif.92.nanterre.cfd@dgsip.finances.gouv.fr": {
+      "departement": "92",
+      "nomDepartement": null,
+      "motif": "2 adresses proposees, aucune designee comme la bonne",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent",
+      "adressesBrutes": [
+        "sdif.92.nanterre.cfd@dgsip.finances.gouv.fr",
+        "sdif.92.ptgc@dgsip.finances;gouv.fr"
+      ],
+      "origine": "pointage telephonique",
+      "serviceVise": "(SDIF) Hauts-de-Seine - Nanterre"
+    },
+    "pelh.620.boulogne-sur-mer@dgfip.finances.gouv.fr": {
+      "departement": "62",
+      "nomDepartement": "Pas-de-Calais",
+      "motif": "PELH = pole d'evaluation des locaux d'habitation : ce n'est pas le guichet de la matrice, a confirmer avant tout envoi",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent"
+    },
+    "cdif.les-sables-dolonne@dgfip.finances.gouv.fr": {
+      "departement": "85",
+      "nomDepartement": null,
+      "motif": "2 adresses proposees, aucune designee comme la bonne",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent",
+      "adressesBrutes": [
+        "cdif.les-sables-dolonne@dgfip.finances.gouv.fr",
+        "sdif.vendee@dgfip.finances.gouv.fr"
+      ],
+      "origine": "pointage telephonique",
+      "serviceVise": "(SDIF)  Vendee - La Roche-sur-Yon"
+    },
+    "centre.des.impots.foncier.basse-terre@dgi.finances.gouv.fr": {
+      "departement": "971",
+      "nomDepartement": "Guadeloupe",
+      "motif": "domaine historique dgi.finances.gouv.fr, probablement perime : a confirmer",
+      "levee": false,
+      "confirmeLe": null,
+      "confirmePar": null,
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent"
     }
-   ],
-   "fiable": false
   },
-  "75": {
-   "nomDepartement": "Ile-de- France / Ile-de-France",
-   "statutReferentiel": "a_trouver",
-   "statutReel": "a_trouver",
-   "motif": "Aucune adresse publiée pour les deux services parisiens. Le découpage est par arrondissement, voir communes[].",
-   "services": [
+  "signalements": [
     {
-     "id": "3b5df727-06c1-4cd4-b165-73136b117562",
-     "nom": "Service départemental des impôts fonciers (SDIF) Ile-de- France - Paris 2 (1er, 2e, 3e, 4e, 5e, 6e, 7e, 9e, 10e, 13e, 14e, 15e, 16e arrondissements)",
-     "courriel": null,
-     "source": null,
-     "verifieLe": null,
-     "verifiePar": null,
-     "telephone": [
-      "01 53 27 45 69"
-     ],
-     "adressePostale": [
-      "Centre des finances publiques, 6 rue Paganini, 75020 Paris"
-     ]
+      "ligne": 61,
+      "departement": "02",
+      "service": "(SDIF) Nord - Valenciennes",
+      "probleme": "une adresse figure dans la colonne observation",
+      "contenu": "sdif14.document@dgfip.finances.gouv.fr"
     },
     {
-     "id": "eccc99a7-a7cd-41e4-ace6-92c070366b1f",
-     "nom": "Service départemental des impôts fonciers (SDIF) Ile-de-France - Paris 1 (8e, 11e, 12e, 17e, 18e, 19e, 20e arrondissements)",
-     "courriel": null,
-     "source": null,
-     "verifieLe": null,
-     "verifiePar": null,
-     "telephone": [
-      "01 53 27 45 77"
-     ],
-     "adressePostale": [
-      "6 rue Paganini, 75020 Paris"
-     ]
+      "adresse": "sdif.aisne@dgfip.finances.gouv.fr",
+      "departement": "02",
+      "probleme": "reserve levee : adresse publiee par l'annuaire, le doute ne venait que d'une cellule du classeur portant plusieurs adresses",
+      "motifInitial": "2 adresses proposees, aucune designee comme la bonne"
+    },
+    {
+      "adresse": "cdif.colomiers@dgfip.finances.gouv.fr",
+      "departement": "31",
+      "probleme": "reserve levee : adresse publiee par l'annuaire, le doute ne venait que d'une cellule du classeur portant plusieurs adresses",
+      "motifInitial": "2 adresses proposees, aucune designee comme la bonne"
+    },
+    {
+      "adresse": "sdif.haute-marne@dgfip.finances.gouv.fr",
+      "departement": "52",
+      "probleme": "reserve levee : adresse publiee par l'annuaire, le doute ne venait que d'une cellule du classeur portant plusieurs adresses",
+      "motifInitial": "2 adresses proposees, aucune designee comme la bonne"
+    },
+    {
+      "adresse": "ptgc.moselle@dgfip.finances.gouv.fr",
+      "departement": "57",
+      "probleme": "reserve levee : adresse publiee par l'annuaire, le doute ne venait que d'une cellule du classeur portant plusieurs adresses",
+      "motifInitial": "2 adresses proposees, aucune designee comme la bonne"
+    },
+    {
+      "adresse": "sdif79.bressuire@dgfip.finances.gouv.fr",
+      "departement": "79",
+      "probleme": "reserve levee : adresse publiee par l'annuaire, le doute ne venait que d'une cellule du classeur portant plusieurs adresses",
+      "motifInitial": "2 adresses proposees, aucune designee comme la bonne"
     }
-   ],
-   "fiable": false
+  ],
+  "services": [
+    {
+      "i": 0,
+      "id": "4d2029e7-53a5-4143-8788-76458633333c",
+      "nom": "Service départemental des impôts fonciers (SDIF) Ain - Bourg-en-Bresse",
+      "courriel": "sdif.ain@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 74 45 86 00",
+      "adressePostale": "5 rue de la Grenouillere, 01012 Bourg-en-Bresse Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/ain/4d2029e7-53a5-4143-8788-76458633333c"
+    },
+    {
+      "i": 1,
+      "id": "c74a91c6-22ad-422d-b801-9364bd92b04f",
+      "nom": "Service départemental des impôts fonciers (SDIF) Aisne - Laon",
+      "courriel": "sdif.aisne@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "0 809 401 401",
+      "adressePostale": "Rue Marcel-Bleuet, Cite administrative, 02016 Laon Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/aisne/c74a91c6-22ad-422d-b801-9364bd92b04f"
+    },
+    {
+      "i": 2,
+      "id": "e0963bbf-63bc-479b-bac4-18f669241fca",
+      "nom": "Service départemental des impôts fonciers (SDIF) Allier - Cusset",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "04 70 30 85 76",
+      "adressePostale": "8 rue du Bief, BP 60092, 03307 Cusset Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/allier/e0963bbf-63bc-479b-bac4-18f669241fca"
+    },
+    {
+      "i": 3,
+      "id": "2803d445-e2ff-4d8c-a0ea-f3e1758907b5",
+      "nom": "Service départemental des impôts fonciers (SDIF) Alpes-de-Haute-Provence - Digne-les-Bains",
+      "courriel": "sdif04@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 92 30 85 92",
+      "adressePostale": "Centre des finances publiques, 19 boulevard Victor Hugo, 04015 Digne-les-Bains Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/provence-alpes-cote-d-azur/alpes-de-haute-provence/2803d445-e2ff-4d8c-a0ea-f3e1758907b5"
+    },
+    {
+      "i": 4,
+      "id": "a8ece9b4-41b9-4809-8ba4-1bbce22e9e36",
+      "nom": "Service départemental des impôts fonciers (SDIF) Alpes-Maritimes - Antibes",
+      "courriel": "cdif.antibes@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 92 93 77 77",
+      "adressePostale": "Centre des finances publiques, 40 chemin de la Colle, CS 20129, 06605 Antibes Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/provence-alpes-cote-d-azur/alpes-maritimes/a8ece9b4-41b9-4809-8ba4-1bbce22e9e36"
+    },
+    {
+      "i": 5,
+      "id": "4353ddb6-a942-476c-9eb1-847078617699",
+      "nom": "Service départemental des impôts fonciers (SDIF) Alpes-Maritimes - Grasse",
+      "courriel": "cdif.grasse@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 93 40 36 00",
+      "adressePostale": "29 traverse de la Paoute, BP 23150, 06131 Grasse Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/provence-alpes-cote-d-azur/alpes-maritimes/4353ddb6-a942-476c-9eb1-847078617699"
+    },
+    {
+      "i": 6,
+      "id": "21a6982f-84ef-4f5d-bdc2-6acb6452e54c",
+      "nom": "Service départemental des impôts fonciers (SDIF) Alpes-Maritimes - Nice",
+      "courriel": "cdif.nice@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 92 09 45 00",
+      "adressePostale": "Centre des finances publiques, 22 rue Joseph-Cadei, CS 63151, 06172 Nice Cedex 2",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/provence-alpes-cote-d-azur/alpes-maritimes/21a6982f-84ef-4f5d-bdc2-6acb6452e54c"
+    },
+    {
+      "i": 7,
+      "id": "ded66b56-5a80-4bcd-b35b-4edec1c875ed",
+      "nom": "Service départemental des impôts fonciers (SDIF) Ardèche - Privas",
+      "courriel": "sdif.ardeche@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 75 66 12 12",
+      "adressePostale": "Centre des finances publiques, 1 route des Mines, BP 134, 07000 Privas",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/ardeche/ded66b56-5a80-4bcd-b35b-4edec1c875ed"
+    },
+    {
+      "i": 8,
+      "id": "2a10e128-bc38-4a68-bf1a-8027261a43f0",
+      "nom": "Service départemental des impôts fonciers (SDIF) Ardennes - Charleville-Mézières",
+      "courriel": "sdif.ardennes@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 24 56 60 42",
+      "adressePostale": "Centre des finances publiques, Cite administrative, 2 esplanade Robert Badinter, 08011 Charleville-Mezieres Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/ardennes/2a10e128-bc38-4a68-bf1a-8027261a43f0"
+    },
+    {
+      "i": 9,
+      "id": "f95b0082-8ddb-4865-8bd9-1f63948387e8",
+      "nom": "Service départemental des impôts fonciers (SDIF) Ariège - Foix",
+      "courriel": "sdif.ariege@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 61 02 33 44",
+      "adressePostale": "Rue Pierre-Mendes-France, CS 40096, 09007 Foix Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/ariege/f95b0082-8ddb-4865-8bd9-1f63948387e8"
+    },
+    {
+      "i": 10,
+      "id": "5145a988-6439-4369-a9b1-3a85a5cd340d",
+      "nom": "Service départemental des impôts fonciers (SDIF) Aube - Troyes",
+      "courriel": "sdif.aube@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 25 41 68 00",
+      "adressePostale": "17 boulevard du 1er-RAM, 10000 Troyes",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/aube/5145a988-6439-4369-a9b1-3a85a5cd340d"
+    },
+    {
+      "i": 11,
+      "id": "7c78ac05-f813-4118-ac3e-5d03ac0257fd",
+      "nom": "Service départemental des impôts fonciers (SDIF) Aude - Carcassonne",
+      "courriel": "sdif.aude.pelh.carcassonne@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 68 77 44 44",
+      "adressePostale": "Centre des finances publiques, Cite administrative, Place Gaston Jourdanne, 11807 Carcassonne Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/aude/7c78ac05-f813-4118-ac3e-5d03ac0257fd"
+    },
+    {
+      "i": 12,
+      "id": "7731beb4-7668-4847-8ae3-8b50b37c5940",
+      "nom": "Service départemental des impôts fonciers (SDIF) Aveyron - Millau",
+      "courriel": "sdif.aveyron@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 65 59 57 13",
+      "adressePostale": "250 avenue de Verdun, 12026 Millau Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/aveyron/7731beb4-7668-4847-8ae3-8b50b37c5940"
+    },
+    {
+      "i": 13,
+      "id": "40482595-2d61-4b7c-b574-049c4a6acb7f",
+      "nom": "Centre des impôts fonciers (CDIF) Bouche-du-Rhône - Marseille",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "04 88 49 27 90",
+      "adressePostale": "22 rue borde, 13357 Marseille Cedex 20",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/provence-alpes-cote-d-azur/bouches-du-rhone/40482595-2d61-4b7c-b574-049c4a6acb7f"
+    },
+    {
+      "i": 14,
+      "id": "4d47e3df-eeea-4d9c-aae3-d14246bf70f1",
+      "nom": "Service départemental des impôts fonciers (SDIF) Bouche-du-Rhône - Aix-en-Provence",
+      "courriel": "cdif.aix-en-provence@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 42 37 53 67",
+      "adressePostale": "10 avenue de la Cible, CS 30849, 13626 Aix-en-Provence Cedex 1",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/provence-alpes-cote-d-azur/bouches-du-rhone/4d47e3df-eeea-4d9c-aae3-d14246bf70f1"
+    },
+    {
+      "i": 15,
+      "id": "7ef0df20-60b3-4c5e-9872-008784f72cd1",
+      "nom": "Service départemental des impôts fonciers (SDIF)  Calvados - Caen",
+      "courriel": "sdif14.caen@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 31 39 74 00",
+      "adressePostale": "Centre des finances publiques, 6 place Gambetta, BP 80540, 14048 Caen Cedex 1",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/normandie/calvados/7ef0df20-60b3-4c5e-9872-008784f72cd1"
+    },
+    {
+      "i": 16,
+      "id": "0c496a0b-f284-408f-977c-5e81852bebc7",
+      "nom": "Service départemental des impôts fonciers (SDIF) Calvados - Bayeux",
+      "courriel": "sdif14.bayeux@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 31 51 44 58",
+      "adressePostale": "Centre des finances publiques, Antenne de Bayeux, Avenue de la Vallee-des-Pres, CS 46417, 14404 Bayeux Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/normandie/calvados/0c496a0b-f284-408f-977c-5e81852bebc7"
+    },
+    {
+      "i": 17,
+      "id": "4e9d5665-b455-40e4-8a89-48932b1678d2",
+      "nom": "Service départemental des impôts fonciers (SDIF) Calvados - Lisieux",
+      "courriel": "sdif14.lisieux@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 31 48 59 00",
+      "adressePostale": "Centre des finances publiques, Place du 8 mai, CS 37208, 14107 Lisieux",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/normandie/calvados/4e9d5665-b455-40e4-8a89-48932b1678d2"
+    },
+    {
+      "i": 18,
+      "id": "de790e86-551b-4b4b-9e68-89940a02b021",
+      "nom": "Service départemental des impôts fonciers (SDIF) Cantal - Aurillac",
+      "courriel": "sdif.aurillac@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 71 43 44 34",
+      "adressePostale": "3 place des Carmes, 15012 Aurillac Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/cantal/de790e86-551b-4b4b-9e68-89940a02b021"
+    },
+    {
+      "i": 19,
+      "id": "992df29c-9dd6-4786-baf3-82587e6e3960",
+      "nom": "Service départemental des impôts fonciers (SDIF) Charente - Angoulême",
+      "courriel": "sdif16@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 45 97 57 00",
+      "adressePostale": "Centre des finances publiques, Soyaux, 1 rue de la Combe, 16800 Angouleme",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/charente/992df29c-9dd6-4786-baf3-82587e6e3960"
+    },
+    {
+      "i": 20,
+      "id": "718fd8c2-b453-43bf-af84-0c2248ddcffe",
+      "nom": "Service départemental des impôts fonciers (SDIF) Charente-Maritime - La Rochelle",
+      "courriel": "sdif.170.larochelle@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 16 59 09 08",
+      "adressePostale": "Centre des finances publiques, 26 avenue de Fetilly, BP 80808, 17020 La Rochelle",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/charente-maritime/718fd8c2-b453-43bf-af84-0c2248ddcffe"
+    },
+    {
+      "i": 21,
+      "id": "97079c57-5986-4cd2-87fc-bf275a515ce7",
+      "nom": "Service départemental des impôts fonciers (SDIF) Charente-Maritime - Saintes",
+      "courriel": "ptgc.170.la-rochelle@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 46 96 52 60",
+      "adressePostale": "4 cours Charles-de-Gaulle, 17108 Saintes Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/charente-maritime/97079c57-5986-4cd2-87fc-bf275a515ce7"
+    },
+    {
+      "i": 22,
+      "id": "f5b782ef-ae3a-4b23-b264-c56400339b47",
+      "nom": "Service départemental des impôts fonciers (SDIF) Cher - Bourges",
+      "courriel": "sdif.cher@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 48 27 18 26",
+      "adressePostale": "Centre administratif Conde, 2 rue Jacques-Rimbault, 18013 Bourges Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/centre-val-de-loire/cher/f5b782ef-ae3a-4b23-b264-c56400339b47"
+    },
+    {
+      "i": 23,
+      "id": "51e2963f-3600-48cf-bdca-aecb246f236e",
+      "nom": "Service départemental des impôts fonciers (SDIF) Corrèze - Brive-la-Gaillarde",
+      "courriel": "sdif19@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 55 18 31 00",
+      "adressePostale": "50 boulevard Gontran-Royer, 19100 Brive-la-Gaillarde",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/correze/51e2963f-3600-48cf-bdca-aecb246f236e"
+    },
+    {
+      "i": 24,
+      "id": "c656f552-49c4-46aa-99c8-2c055b5cb96a",
+      "nom": "Service départemental des impôts fonciers (SDIF) Côte-d'Or - Dijon",
+      "courriel": "spfe.dijon@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "03 80 28 65 00",
+      "adressePostale": "25 rue de la Boudronnee, BP 1549, 21047 Dijon Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bourgogne-franche-comte/cote-d-or/c656f552-49c4-46aa-99c8-2c055b5cb96a"
+    },
+    {
+      "i": 25,
+      "id": "94d26abd-77e8-45dc-a043-6d8a0c6d50c0",
+      "nom": "Service départemental des impôts fonciers (SDIF) Côtes d'Armor - Saint-Brieuc",
+      "courriel": "sdif22@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 96 01 42 42",
+      "adressePostale": "4 rue Abbe-Garnier, CS 22054, 22022 Saint-Brieuc Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bretagne/cotes-d-armor/94d26abd-77e8-45dc-a043-6d8a0c6d50c0"
+    },
+    {
+      "i": 26,
+      "id": "79a1f75d-13f5-40a5-8f5e-ee1f091ca8a6",
+      "nom": "Service départemental des impôts fonciers (SDIF) Creuse - Guéret",
+      "courriel": "sdif.gueret@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 55 51 63 23",
+      "adressePostale": "3 avenue de Laure, 23000 Gueret",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/creuse/79a1f75d-13f5-40a5-8f5e-ee1f091ca8a6"
+    },
+    {
+      "i": 27,
+      "id": "f956a484-e725-4963-b626-a1565f5e6898",
+      "nom": "Service départemental des impôts fonciers (SDIF) Dordogne - Périgueux",
+      "courriel": "sdif.dordogne@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 53 03 35 00",
+      "adressePostale": "15 rue du 26e-Regiment-d'Infanterie, CS 61000, 24053 Perigueux Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/dordogne/f956a484-e725-4963-b626-a1565f5e6898"
+    },
+    {
+      "i": 28,
+      "id": "57e8e643-0f70-479f-bcff-28be44df6fd2",
+      "nom": "Service départemental des impôts fonciers (SDIF) Drôme - Valence",
+      "courriel": "sdif.drome@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 75 79 50 21",
+      "adressePostale": "Centre des finances publiques, Centre administratif Le Polygone, 15 avenue de Romans, BP 2116, 26021 Valence Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/drome/57e8e643-0f70-479f-bcff-28be44df6fd2"
+    },
+    {
+      "i": 29,
+      "id": "f0106940-0a0d-439c-a30b-c084afd2a682",
+      "nom": "Service départemental des impôts fonciers (SDIF) Eure - Louviers",
+      "courriel": "sdif.270.louviers@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 32 25 71 00",
+      "adressePostale": "Place de la demi-Lune, BP 518, 27405 Louviers Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/normandie/eure/f0106940-0a0d-439c-a30b-c084afd2a682"
+    },
+    {
+      "i": 30,
+      "id": "56820c94-1618-4b61-b2a4-cb4ed22b0663",
+      "nom": "Service départemental des impôts fonciers (SDIF) Eure-et-Loir - Chartres",
+      "courriel": "sdif.eure-et-loir@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 37 18 70 83",
+      "adressePostale": "Service departemental des impots foncier d'Eure-et-Loir, 5 place de la Republique, 28019 Chartres Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/centre-val-de-loire/eure-et-loir/56820c94-1618-4b61-b2a4-cb4ed22b0663"
+    },
+    {
+      "i": 31,
+      "id": "944ec2f6-c48c-4505-804a-9969ffb76de0",
+      "nom": "Service départemental des impôts fonciers (SDIF) Finistère - Brest",
+      "courriel": "sdif29.brest@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 98 80 89 00",
+      "adressePostale": "1 square Marc-Sangnier, BP 90167, 29803 Brest Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bretagne/finistere/944ec2f6-c48c-4505-804a-9969ffb76de0"
+    },
+    {
+      "i": 32,
+      "id": "9926eeee-d21e-45d5-a6ef-4aeb13a4f163",
+      "nom": "Service départemental des impôts fonciers (SDIF) Finistère - Chateaulin",
+      "courriel": "sdif29.chateaulin@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 98 86 79 00",
+      "adressePostale": "5 place Kerjean, CS 90055, 29150 Chateaulin",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bretagne/finistere/9926eeee-d21e-45d5-a6ef-4aeb13a4f163"
+    },
+    {
+      "i": 33,
+      "id": "1eeee893-d4f6-4ff3-9d57-18c20392b989",
+      "nom": "Service départemental des impôts fonciers (SDIF) Corse-du-Sud - Ajaccio",
+      "courriel": "cdif.ajaccio@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 95 50 35 00",
+      "adressePostale": "Centre des finances publiques, 6 parc Cuneo d'Ornano, BP 409, 20195 Ajaccio Cedex 1",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/corse/corse-du-sud/1eeee893-d4f6-4ff3-9d57-18c20392b989"
+    },
+    {
+      "i": 34,
+      "id": "0f6758c0-e49c-4eed-817e-6dc45a0da8d4",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Corse - Bastia",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "04 95 32  93 93",
+      "adressePostale": "Centre des finances publiques, 67 rue des Horizons-Bleus, 20402 Bastia Cedes 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/corse/haute-corse/0f6758c0-e49c-4eed-817e-6dc45a0da8d4"
+    },
+    {
+      "i": 35,
+      "id": "1d903167-8c49-4808-b316-785a78afcb7a",
+      "nom": "Service départemental des impôts fonciers (SDIF) Gard - Nîmes",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "04 66 87 60 60",
+      "adressePostale": "67 rue Salomon-Reinach, 30032 Nimes Cedex 1",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/gard/1d903167-8c49-4808-b316-785a78afcb7a"
+    },
+    {
+      "i": 36,
+      "id": "519088c8-8ba8-4dfc-a2ec-31f6db5395b0",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Garonne - Colomiers",
+      "courriel": "cdif.colomiers@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 62 74 23 00",
+      "adressePostale": "Centre des finances publiques, 1 allee du Gevaudan, BP 20305, 31776 Colomiers Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/haute-garonne/519088c8-8ba8-4dfc-a2ec-31f6db5395b0"
+    },
+    {
+      "i": 37,
+      "id": "385da18a-906d-4207-850a-d3079df1549a",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Garonne - Muret",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "05 62 23 12 00",
+      "adressePostale": "159 avenue Jacques-Douzans, 31608 Muret Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/haute-garonne/385da18a-906d-4207-850a-d3079df1549a"
+    },
+    {
+      "i": 38,
+      "id": "160d2ce3-5fc0-49d2-b8b3-717446aeb631",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Garonne - Saint-Gaudens",
+      "courriel": "cdif.saint-gaudens@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 61 94 85 30",
+      "adressePostale": "Hotel des impots, Place du Pilat, BP 10042, 31801 Saint-Gaudens Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/haute-garonne/160d2ce3-5fc0-49d2-b8b3-717446aeb631"
+    },
+    {
+      "i": 39,
+      "id": "a69ebf56-1cea-43cb-a0a3-38382b64fa16",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Garonne - Toulouse",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "05 34 31 11 11",
+      "adressePostale": "Centre des finances publiques, 33 rue Jeanne Marvig, BP 64251, 31404 Toulouse Cedex 4",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/haute-garonne/a69ebf56-1cea-43cb-a0a3-38382b64fa16"
+    },
+    {
+      "i": 40,
+      "id": "1a7580c4-50c4-480a-9c5c-2afe0855cffb",
+      "nom": "Service départemental des impôts fonciers (SDIF) Gers - Auch",
+      "courriel": "sdif.gers@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 62 61 50 50",
+      "adressePostale": "Centre des finances publiques, 14 rue Leconte-de-Lisle, CS 70352, 32010 Auch Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/gers/1a7580c4-50c4-480a-9c5c-2afe0855cffb"
+    },
+    {
+      "i": 41,
+      "id": "0309a6a4-9bb2-4273-a72d-5eda0c17f32f",
+      "nom": "Service départemental des impôts fonciers (SDIF) Gironde - Bordeaux",
+      "courriel": "sdif33.ptgc@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 56 63 66 90",
+      "adressePostale": "Cite administrative, Rue Jules-Ferry, 33090 Bordeaux Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/gironde/0309a6a4-9bb2-4273-a72d-5eda0c17f32f"
+    },
+    {
+      "i": 42,
+      "id": "468a1e48-8036-4e92-940d-096cfedabdd7",
+      "nom": "Service départemental des impôts fonciers (SDIF) Gironde - Langon",
+      "courriel": "sdif33.ptgc@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 56 63 66 90",
+      "adressePostale": "Centre des Finances Publiques, 70 cours du General-Leclerc, 33213 Langon Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/gironde/468a1e48-8036-4e92-940d-096cfedabdd7"
+    },
+    {
+      "i": 43,
+      "id": "c3b39929-46af-4b27-ae78-6a415516f2a9",
+      "nom": "Service départemental des impôts fonciers (SDIF) Gironde - Libourne",
+      "courriel": "sdif33.ptgc@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 56 63 66 90",
+      "adressePostale": "Centre des finances publiques, Rue du President-Wilson, BP 201, 33305 Libourne Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/gironde/c3b39929-46af-4b27-ae78-6a415516f2a9"
+    },
+    {
+      "i": 44,
+      "id": "575ae44e-6c6a-460f-afc5-41d526622f76",
+      "nom": "Service départemental des impôts fonciers (SDIF) Hérault - Béziers",
+      "courriel": "sdif34@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 11 28 49 64",
+      "adressePostale": "Service des Impots Foncier de l'Herault, Centre des finances publiques, 9-11 avenue Pierre-Verdier, 34537 Beziers Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/herault/575ae44e-6c6a-460f-afc5-41d526622f76"
+    },
+    {
+      "i": 45,
+      "id": "e16e923c-fe08-4058-a9da-533db9c75e69",
+      "nom": "Service départemental des impôts fonciers (SDIF) Hérault - Montpellier",
+      "courriel": "sdif34@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 11 28 49 64",
+      "adressePostale": "Le Millenaire, 156 rue Alfred Nobel, CS 51018, 34960 Montpellier Cedex 2",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/herault/e16e923c-fe08-4058-a9da-533db9c75e69"
+    },
+    {
+      "i": 46,
+      "id": "f2b3652e-57ef-434a-8b40-31a98f3503aa",
+      "nom": "Service départemental des impôts fonciers (SDIF) Ille-et-Vilaine - Rennes",
+      "courriel": "sdif.ille-et-vilaine@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 99 29 23 03",
+      "adressePostale": "2 boulevard Magenta, BP 12301, 35023 Rennes Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bretagne/ille-et-vilaine/f2b3652e-57ef-434a-8b40-31a98f3503aa"
+    },
+    {
+      "i": 47,
+      "id": "639ea7cc-ed4f-43c9-93b6-2d0d6933354a",
+      "nom": "Service départemental des impôts fonciers (SDIF) Indre - Châteauroux",
+      "courriel": "sdif.chateauroux@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 54 53 17 10",
+      "adressePostale": "4 bis rue du 14e-RTA, 36000 Chateauroux",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/centre-val-de-loire/indre/639ea7cc-ed4f-43c9-93b6-2d0d6933354a"
+    },
+    {
+      "i": 48,
+      "id": "83f54557-4273-4fe5-8aa4-bf3dcfeba28a",
+      "nom": "Service départemental des impôts fonciers (SDIF) Indre-et-Loire - Tours",
+      "courriel": "sdif.tours@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 47 21 71 67",
+      "adressePostale": "40 rue Edouard-Vaillant, 37060 Tours Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/centre-val-de-loire/indre-et-loire/83f54557-4273-4fe5-8aa4-bf3dcfeba28a"
+    },
+    {
+      "i": 49,
+      "id": "4c439af2-e2d5-43d4-95fb-32c18d8dfa55",
+      "nom": "Service départemental des Impôts fonciers (SDIF) Isère - Grenoble",
+      "courriel": "cdif.sud-isere@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 80 42 87 38",
+      "adressePostale": "38 avenue Rhin et Danube, 38100 Grenoble",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/isere/4c439af2-e2d5-43d4-95fb-32c18d8dfa55"
+    },
+    {
+      "i": 50,
+      "id": "bd611edf-3b80-4f69-8daa-342956dbdfe1",
+      "nom": "Service départemental des impôts fonciers (SDIF) Isère - Vienne",
+      "courriel": "cdif.nord-isere@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 81 62 08 04",
+      "adressePostale": "12 rue jean Moulin, 38200 Vienne",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/isere/bd611edf-3b80-4f69-8daa-342956dbdfe1"
+    },
+    {
+      "i": 51,
+      "id": "ac798530-d933-4a37-b15d-ce69295163d0",
+      "nom": "Service départemental des impôts fonciers (SDIF) Doubs - Besançon",
+      "courriel": "sdif.doubs@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 81 65 65 50",
+      "adressePostale": "CFP Chamars, Boulevard Charles de Gaulle, 25043 Besancon Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bourgogne-franche-comte/doubs/ac798530-d933-4a37-b15d-ce69295163d0"
+    },
+    {
+      "i": 52,
+      "id": "d549e16d-c65b-4338-b8c3-07a8976fae88",
+      "nom": "Service départemental des impôts fonciers (SDIF) Doubs - Montbéliard",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "03 81 65 65 50",
+      "adressePostale": "Centre des finances publiques, 1 rue Pierre-Brossolette, 25214 Montbeliard Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bourgogne-franche-comte/doubs/d549e16d-c65b-4338-b8c3-07a8976fae88"
+    },
+    {
+      "i": 53,
+      "id": "eca4eefa-c96b-4602-9d17-e54ac7b1ddcc",
+      "nom": "Service départemental des impôts fonciers (SDIF) Jura - Champagnole",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "03 84 52 01 31",
+      "adressePostale": "3 rue Victor-Berard, 39300 Champagnole",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bourgogne-franche-comte/jura/eca4eefa-c96b-4602-9d17-e54ac7b1ddcc"
+    },
+    {
+      "i": 54,
+      "id": "65183bd9-10c7-460a-a4e2-8391020e0497",
+      "nom": "Service départemental des impôts fonciers (SDIF) Landes - Dax",
+      "courriel": "sdif40.dax@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 58 56 63 03",
+      "adressePostale": "9 avenue Paul-Doumer, 40107 Dax Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/landes/65183bd9-10c7-460a-a4e2-8391020e0497"
+    },
+    {
+      "i": 55,
+      "id": "d8ebf123-dd82-441a-878f-0f4c5aed3bdf",
+      "nom": "Service départemental des impôts fonciers (SDIF) Landes - Mont-de-Marsan",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "05 58 06 61 84",
+      "adressePostale": "Centre des Finances publiques - SDIF, 12 avenue de Dagas, 40022 Mont-de-Marsan Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/landes/d8ebf123-dd82-441a-878f-0f4c5aed3bdf"
+    },
+    {
+      "i": 56,
+      "id": "df8e3ee7-c5eb-4049-964e-006eac47f331",
+      "nom": "Service départemental des impôts fonciers (SDIF) Loir-et-Cher - Blois",
+      "courriel": "sdif41@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 54 55 70 51",
+      "adressePostale": "Centre des finances publiques, 10 rue Louis-Bodin, CS 50001, 41026 Blois Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/centre-val-de-loire/loir-et-cher/df8e3ee7-c5eb-4049-964e-006eac47f331"
+    },
+    {
+      "i": 57,
+      "id": "c4f5edc2-5d17-4627-8524-3095b02207cb",
+      "nom": "Service départemental des impôts fonciers (SDIF) Auvergne-Rhône-Alpes - Saint-Etienne",
+      "courriel": "sdif.loire@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 81 64 20 60",
+      "adressePostale": "Centre des finances publiques, 8 rue de la Convention, 42100 Saint-Etienne",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/loire/c4f5edc2-5d17-4627-8524-3095b02207cb"
+    },
+    {
+      "i": 58,
+      "id": "1bc5c939-a681-4f2a-8067-b84862e34480",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Loire - Le Puy-en-Velay",
+      "courriel": "sdif43@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 71 09 83 38",
+      "adressePostale": "1 rue Alphonse-Terrasson, BP 10342, 43012 Le Puy-en-Velay Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/haute-loire/1bc5c939-a681-4f2a-8067-b84862e34480"
+    },
+    {
+      "i": 59,
+      "id": "c9886c9a-ed9a-413f-9036-04190d7f2c13",
+      "nom": "Service départemental des impôts fonciers (SDIF) Loire-Atlantique",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "02 51 12 86 36",
+      "adressePostale": "Centre des finances publiques, 2 rue du general Margueritte, CS 13513, 44035 Nantes Cedex 1",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/pays-de-la-loire/loire-atlantique/c9886c9a-ed9a-413f-9036-04190d7f2c13"
+    },
+    {
+      "i": 60,
+      "id": "ee3ed73d-647a-4803-9560-bec5f355db88",
+      "nom": "Service départemental des impôts fonciers (SDIF) Saint-Nazaire",
+      "courriel": "cdif.saint-nazaire@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 49 63 41 28",
+      "adressePostale": "Centre des finances publiques, 54 avenue du General-de-Gaulle, 44600 Saint-Nazaire",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/pays-de-la-loire/loire-atlantique/ee3ed73d-647a-4803-9560-bec5f355db88"
+    },
+    {
+      "i": 61,
+      "id": "a31004f7-3321-4399-865f-dbccf115c0ea",
+      "nom": "Service départemental des impôts fonciers (SDIF) Loiret - Orléans",
+      "courriel": "sdif.loiret@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 38 42 55 55",
+      "adressePostale": "Cite administrative Coligny, 131 rue du faubourd Bannier, CS 54211, 45042 Orleans Cedex 1",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/centre-val-de-loire/loiret/a31004f7-3321-4399-865f-dbccf115c0ea"
+    },
+    {
+      "i": 62,
+      "id": "1e0bdaed-d154-4c17-b9cf-42d7e2f56602",
+      "nom": "Service départemental des impôts fonciers (SDIF) Lot - Cahors",
+      "courriel": "cdif.cahors@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 65 20 33 33",
+      "adressePostale": "Centre des finances publiques, 83 rue Victor-Hugo, 46009 Cahors Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/lot/1e0bdaed-d154-4c17-b9cf-42d7e2f56602"
+    },
+    {
+      "i": 63,
+      "id": "b5358088-56a4-4bb7-b101-d3524f3ed3e4",
+      "nom": "Service départemental des impôts fonciers (SDIF) Lot-et-Garonne - Agen",
+      "courriel": "sdif.agen@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 53 69 19 83",
+      "adressePostale": "Cite administrative Montesquieu, Rue Rene-Bonnat, TSA 50008, 47013 Agen cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/lot-et-garonne/b5358088-56a4-4bb7-b101-d3524f3ed3e4"
+    },
+    {
+      "i": 64,
+      "id": "db6005eb-1caf-459c-8439-395de73f0e70",
+      "nom": "Service départemental des impôts fonciers (SDIF) Lozère - Mende",
+      "courriel": "sdif.mende@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 11 29 01 31",
+      "adressePostale": "Centre des finances publiques, Cite administrative, 9 rue des Carmes, BP 142, 48008 Mende Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/lozere/db6005eb-1caf-459c-8439-395de73f0e70"
+    },
+    {
+      "i": 65,
+      "id": "347ba649-075c-402c-bb06-2c2bf5f20783",
+      "nom": "Service départemental des impôts fonciers (SDIF) Manche - Antenne d'Avranches",
+      "courriel": "sdif.manche@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 33 89 10 00",
+      "adressePostale": "Centre des Finances Publiques, Antenne d'Avranches, 7 rue Louis-Millet, 50308 Avranches Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/normandie/manche/347ba649-075c-402c-bb06-2c2bf5f20783"
+    },
+    {
+      "i": 66,
+      "id": "a8afb1cb-7da0-454e-b90b-22f8becba82c",
+      "nom": "Service départemental des impôts fonciers (SDIF) Manche - Antenne de Cherbourg",
+      "courriel": "sdif.manche@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 33 01 62 00",
+      "adressePostale": "Centre des finances publiques, 112 rue de l'Abbaye, 50114 Cherbourg-en-Cotentin Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/normandie/manche/a8afb1cb-7da0-454e-b90b-22f8becba82c"
+    },
+    {
+      "i": 67,
+      "id": "56689b48-e640-4106-98e0-f9e7521aca92",
+      "nom": "Service départemental des impôts fonciers (SDIF) Manche - Coutances",
+      "courriel": "sdif.manche@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 33 76 66 00",
+      "adressePostale": "Centre des finances publiques, Siege de Coutances, 13 rue Eleonore-Daubree, 50208 Coutances Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/normandie/manche/56689b48-e640-4106-98e0-f9e7521aca92"
+    },
+    {
+      "i": 68,
+      "id": "6e63b764-06dd-4c28-bd64-df5301244688",
+      "nom": "Service départemental des impôts fonciers (SDIF) Marne - Châlons-en-Champagne",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "03 26 68 60 36",
+      "adressePostale": "5 rue de la Charriere, 51036 Chalons-en-Champagne Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/marne/6e63b764-06dd-4c28-bd64-df5301244688"
+    },
+    {
+      "i": 69,
+      "id": "47a4f1dd-58cb-4dc7-9ead-7f1ae1e6844b",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Marne - Chaumont",
+      "courriel": "sdif.haute-marne@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 52 18 83 15",
+      "adressePostale": "Cite administrative, 89 rue Victoire de la Marne, BP 42064, 52903 Chaumont Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/haute-marne/47a4f1dd-58cb-4dc7-9ead-7f1ae1e6844b"
+    },
+    {
+      "i": 70,
+      "id": "e9af1f53-3c13-42e4-8c72-c60e4284f7c1",
+      "nom": "Service départemental des impôts fonciers (SDIF) Mayenne - Laval",
+      "courriel": "sdif.laval@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 43 49 77 17",
+      "adressePostale": "Centre des finances publiques, 60 rue Mac Donald, BP 70819, 53008 Laval Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/pays-de-la-loire/mayenne/e9af1f53-3c13-42e4-8c72-c60e4284f7c1"
+    },
+    {
+      "i": 71,
+      "id": "5688208e-a09b-4298-b579-d109d58f7167",
+      "nom": "Service départemental des impôts fonciers (SDIF) Meurthe-et-Moselle - Nancy",
+      "courriel": "sdif.meurthe-et-moselle@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "03 83 85 48 36",
+      "adressePostale": "47 rue Sainte-Catherine, BP 60042, 54000 Nancy Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/meurthe-et-moselle/5688208e-a09b-4298-b579-d109d58f7167"
+    },
+    {
+      "i": 72,
+      "id": "20baf691-3d9d-47dd-b9ba-c31b541ff6f2",
+      "nom": "Service départemental des impôts fonciers (SDIF) Morbihan - Ploërmel",
+      "courriel": "sdif.morbihan@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 97 01 50 66",
+      "adressePostale": "23 rue du 8 mai 1945, CS 50290, 56802 Ploermel cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bretagne/morbihan/20baf691-3d9d-47dd-b9ba-c31b541ff6f2"
+    },
+    {
+      "i": 73,
+      "id": "da7774e6-b42d-4ee0-a0f2-07795bbabbd8",
+      "nom": "Service départemental des impôts fonciers (SDIF) Moselle - Metz",
+      "courriel": "sdif.metz.foncier@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 87 55 81 45",
+      "adressePostale": "Centre des finances publiques, 8 rue des Clercs, BP 91051, 57035 Metz Cedex 01",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/moselle/da7774e6-b42d-4ee0-a0f2-07795bbabbd8"
+    },
+    {
+      "i": 74,
+      "id": "3d1099af-f1d8-4e60-8760-858feb0ca9b5",
+      "nom": "Service départemental des impôts fonciers (SDIF) Moselle - Sarrebourg",
+      "courriel": "ptgc.moselle@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 87 23 29 54",
+      "adressePostale": "Service des impots des particuliers, Centre des finances publiques, 12 rue de Luneville, BP 30110, 57403 Sarrebourg Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/moselle/3d1099af-f1d8-4e60-8760-858feb0ca9b5"
+    },
+    {
+      "i": 75,
+      "id": "73d728d6-1c59-4f61-83af-ac36b6bbaf38",
+      "nom": "Service départemental des impôts fonciers (SDIF) Nièvre - Nevers",
+      "courriel": "sdif.nievre@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "03 86 68 49 49",
+      "adressePostale": "Service des impots des particuliers, Centre des finances publiques, 19 rue Camille Baynac, BP 70888, 58015 Nevers cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bourgogne-franche-comte/nievre/73d728d6-1c59-4f61-83af-ac36b6bbaf38"
+    },
+    {
+      "i": 76,
+      "id": "6367ed3a-4cdb-4dae-b186-7b1947a737f4",
+      "nom": "Service départemental des impôts fonciers (SDIF) Nord - Dunkerque",
+      "courriel": "sdif.nord@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 28 22 66 07",
+      "adressePostale": "37 rue Saint-Matthieu, 59140 Dunkerque",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/nord/6367ed3a-4cdb-4dae-b186-7b1947a737f4"
+    },
+    {
+      "i": 77,
+      "id": "91afae88-fdd9-4736-b600-c23903fe74db",
+      "nom": "Service départemental des impôts fonciers (SDIF) Nord - Lille",
+      "courriel": "sdif.nord@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 66 19 77 77",
+      "adressePostale": "22 rue Lavoisier, 59466 Lomme Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/nord/91afae88-fdd9-4736-b600-c23903fe74db"
+    },
+    {
+      "i": 78,
+      "id": "1cd0c845-aea9-4ff8-b95c-2350763ffca7",
+      "nom": "Service départemental des impôts fonciers (SDIF) Nord - Valenciennes",
+      "courriel": "sdif.nord@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 27 14 65 13",
+      "adressePostale": "Rue Raoul-Follereau, 59322 Valenciennes Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/nord/1cd0c845-aea9-4ff8-b95c-2350763ffca7"
+    },
+    {
+      "i": 79,
+      "id": "bf9e40df-bd3d-4d4b-951a-af5741b669e7",
+      "nom": "Service départemental des impôts fonciers (SDIF) Oise - Creil",
+      "courriel": "sdif.pro.oise@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "03 44 64 43 30",
+      "adressePostale": "Service departemental des impots fonciers de l'Oise, Centre des finances publiques, 1 et 2 square Helene-Boucher, 60831 Creil Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/oise/bf9e40df-bd3d-4d4b-951a-af5741b669e7"
+    },
+    {
+      "i": 80,
+      "id": "016f7c27-79af-4897-9378-927da03737d8",
+      "nom": "Service départemental des impôts fonciers (SDIF) Orne - Argentan",
+      "courriel": "sdif.orne@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 33 12 18 90",
+      "adressePostale": "6 bis rue Jean Joly, 61200 Argentan",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/normandie/orne/016f7c27-79af-4897-9378-927da03737d8"
+    },
+    {
+      "i": 81,
+      "id": "3e144566-d070-461f-8e94-c67c95477314",
+      "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Arras",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "03 21 24 68 68",
+      "adressePostale": "10 rue Diderot, CS 80020, 62034 Arras Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/pas-de-calais/3e144566-d070-461f-8e94-c67c95477314"
+    },
+    {
+      "i": 82,
+      "id": "c1755fe9-5969-45ef-b3e5-49a0a6ccdbc5",
+      "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Boulogne-sur-Mer",
+      "courriel": "pelh.620.boulogne-sur-mer@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 21 10 29 29",
+      "adressePostale": "Centre des finances publiques, 26 rue d'Aumont, CS 50639, 62321 Boulogne-sur-Mer cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/pas-de-calais/c1755fe9-5969-45ef-b3e5-49a0a6ccdbc5"
+    },
+    {
+      "i": 83,
+      "id": "c1db920d-eba4-4dd3-b9be-20efe3e414ac",
+      "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Lens",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "03 21 08 10 10",
+      "adressePostale": "Centre des finances publiques, 7 rue Louis Armand, CS 80017, 62307 Lens Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/pas-de-calais/c1db920d-eba4-4dd3-b9be-20efe3e414ac"
+    },
+    {
+      "i": 84,
+      "id": "4b26fe85-2513-43fe-9586-8ec55e874f2f",
+      "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Saint-Omer",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "03 21 98 76 76",
+      "adressePostale": "Centre des finances publiques, 1 allee Honore-de-Balzac, BP 30009, 62967 Longuenesse Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/pas-de-calais/4b26fe85-2513-43fe-9586-8ec55e874f2f"
+    },
+    {
+      "i": 85,
+      "id": "90013ce2-4c19-4e56-9c90-f525143c0c89",
+      "nom": "Service départemental des impôts fonciers (SDIF) Puy-de-Dôme - Clermont-Ferrand",
+      "courriel": "sdif.puy-de-dome@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 73 43 20 00",
+      "adressePostale": "Centre des finances publiques, Boulevard Berthelot, 63033 Clermont-Ferrand Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/puy-de-dome/90013ce2-4c19-4e56-9c90-f525143c0c89"
+    },
+    {
+      "i": 86,
+      "id": "eb0b2e62-d085-422a-8974-0999baa9b476",
+      "nom": "Service départemental des impôts fonciers (SDIF) Pyrénées-Atlantiques - Bayonne",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "05 59 58 58 36",
+      "adressePostale": "Centre des finances publiques, 11 rue Vauban, BP 11, 64109 Bayonne Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/pyrenees-atlantiques/eb0b2e62-d085-422a-8974-0999baa9b476"
+    },
+    {
+      "i": 87,
+      "id": "c85d3d6b-c9e8-4136-9ce5-38a168b946df",
+      "nom": "Service départemental des impôts fonciers (SDIF) Pyrénées-Atlantiques - Pau",
+      "courriel": "sdif64@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 59 98 68 74",
+      "adressePostale": "Centre des finances publiques, 6 rue d'Orleans, BP 1612, 64016 Pau Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/pyrenees-atlantiques/c85d3d6b-c9e8-4136-9ce5-38a168b946df"
+    },
+    {
+      "i": 88,
+      "id": "24fbb989-523d-4d0d-aa8b-f5f4b5bd7a09",
+      "nom": "Service départemental des impôts fonciers (SDIF) Hautes-Pyrénées - Tarbes",
+      "courriel": "sdif.hautes-pyrenees@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 62 44 40 40",
+      "adressePostale": "Centre des finances publiques, 1 boulevard du Marechal-Juin, 65023 Tarbes Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/hautes-pyrenees/24fbb989-523d-4d0d-aa8b-f5f4b5bd7a09"
+    },
+    {
+      "i": 89,
+      "id": "124ca25e-4840-406d-b4e4-74bda9942316",
+      "nom": "Service départemental des impôts fonciers (SDIF) Pyrénées-Orientales - Perpignan",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "04 68 66 41 41",
+      "adressePostale": "Centre des finances publiques, 24 avenue de la Cote Vermeille, TSA 10009, 66961 Perpignan Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/pyrenees-orientales/124ca25e-4840-406d-b4e4-74bda9942316"
+    },
+    {
+      "i": 90,
+      "id": "ea6a4f9e-7b01-4912-9798-475844674b22",
+      "nom": "Service départemental des impôts fonciers (SDIF) Bas-Rhin - Molsheim",
+      "courriel": "sdif.bas-rhin@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "03 88 47 98 31",
+      "adressePostale": "20 rue Gaston Romazzotti, CS 25165, 67125 Molsheim Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/bas-rhin/ea6a4f9e-7b01-4912-9798-475844674b22"
+    },
+    {
+      "i": 91,
+      "id": "7eb8c9a4-cfd2-4135-ac53-189f7c01503a",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haut-Rhin - Colmar",
+      "courriel": "sdif.68colmar@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "03 89 24 81 17",
+      "adressePostale": "3 rue Fleischhauer, Cite administrative, 68026 Colmar Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/haut-rhin/7eb8c9a4-cfd2-4135-ac53-189f7c01503a"
+    },
+    {
+      "i": 92,
+      "id": "99c6714e-95b9-4777-88e7-e1a67d6e6d2b",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haut-Rhin - Mulhouse",
+      "courriel": "sdif.68mulhouse@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "03 89 33 32 06",
+      "adressePostale": "Batiment C, Cite administrative, 12 rue Coehorn, 68085 Mulhouse Cedex 1",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/haut-rhin/99c6714e-95b9-4777-88e7-e1a67d6e6d2b"
+    },
+    {
+      "i": 93,
+      "id": "40ed0dcb-d584-49ea-be76-0c90b78ee9e1",
+      "nom": "Service départemental des impôts fonciers (SDIF) Rhône - Lyon",
+      "courriel": "sdif.rhone@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 20 61 88 00",
+      "adressePostale": "Nouvelle Cite Administrative, 118 rue Servient, 69003 Lyon",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/rhone/40ed0dcb-d584-49ea-be76-0c90b78ee9e1"
+    },
+    {
+      "i": 94,
+      "id": "e7364335-30ee-4cfd-868f-bbd8309bc178",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Saône",
+      "courriel": "sdif70@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 84 62 41 00",
+      "adressePostale": "21 rue de Bourdieu, BP 169, 70204 Lure Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bourgogne-franche-comte/haute-saone/e7364335-30ee-4cfd-868f-bbd8309bc178"
+    },
+    {
+      "i": 95,
+      "id": "b985dd58-4307-4623-874d-ff893b491ed2",
+      "nom": "Service départemental des impôts fonciers (SDIF) Saône-et-Loire - Mâcon",
+      "courriel": "sdif.saone-et-loire@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 58 79 32 40",
+      "adressePostale": "Centre des finances publiques, Cite administrative, 24 boulevard Henri-Dunant, CS 60225, 71025 Macon Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bourgogne-franche-comte/saone-et-loire/b985dd58-4307-4623-874d-ff893b491ed2"
+    },
+    {
+      "i": 96,
+      "id": "7512bee0-a4cc-4fa9-bc5f-590aeae22540",
+      "nom": "Service départemental des impôts fonciers (SDIF) Sarthe - Le Mans",
+      "courriel": "sdif.sarthe@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 43 83 81 22",
+      "adressePostale": "33 avenue du General-de-Gaulle, 72038 Le Mans Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/pays-de-la-loire/sarthe/7512bee0-a4cc-4fa9-bc5f-590aeae22540"
+    },
+    {
+      "i": 97,
+      "id": "cbf6a8b9-5d70-48ea-9e48-fb7cdcbf5cd9",
+      "nom": "Service départemental des impôts fonciers (SDIF) Savoie - Chambéry",
+      "courriel": "sdif.savoie@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 79 60 40 00",
+      "adressePostale": "51 avenue de Bassens, 73018 Chambery Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/savoie/cbf6a8b9-5d70-48ea-9e48-fb7cdcbf5cd9"
+    },
+    {
+      "i": 98,
+      "id": "2c72d15b-1fc3-4fa6-b00d-d9eedd8c3ded",
+      "nom": "Service départemental des impôts fonciers (SDIF) Savoie - Saint-Jean-de-Maurienne",
+      "courriel": "sdif.savoie@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 79 83 25 74",
+      "adressePostale": "422 rue de la Republique, 73300 Saint-Jean-de-Maurienne",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/savoie/2c72d15b-1fc3-4fa6-b00d-d9eedd8c3ded"
+    },
+    {
+      "i": 99,
+      "id": "057f41f4-f3d8-41ae-9842-e244a8a42ef9",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Savoie - Annecy",
+      "courriel": "cdif.annecy@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 50 88 40 43",
+      "adressePostale": "Centre des finances publiques, Cite administrative, 7 rue Dupanloup, 74040 Annecy Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/haute-savoie/057f41f4-f3d8-41ae-9842-e244a8a42ef9"
+    },
+    {
+      "i": 100,
+      "id": "cdb6415e-db0a-4c1f-8b0b-00b861432b11",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Savoie - Bonneville",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "04 50 97 19 01",
+      "adressePostale": "Centre des finances publiques, 45 rue Pierre-de-Coubertin, BP 131, 74136 Bonneville Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/auvergne-rhone-alpes/haute-savoie/cdb6415e-db0a-4c1f-8b0b-00b861432b11"
+    },
+    {
+      "i": 101,
+      "id": "3b5df727-06c1-4cd4-b165-73136b117562",
+      "nom": "Service départemental des impôts fonciers (SDIF) Ile-de- France - Paris 2 (1er, 2e, 3e, 4e, 5e, 6e, 7e, 9e, 10e, 13e, 14e, 15e, 16e arrondissements)",
+      "courriel": "cdif.paris2@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "01 53 27 45 69",
+      "adressePostale": "Centre des finances publiques, 6 rue Paganini, 75020 Paris",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/ile-de-france/paris/3b5df727-06c1-4cd4-b165-73136b117562"
+    },
+    {
+      "i": 102,
+      "id": "eccc99a7-a7cd-41e4-ace6-92c070366b1f",
+      "nom": "Service départemental des impôts fonciers (SDIF) Ile-de-France - Paris 1 (8e, 11e, 12e, 17e, 18e, 19e, 20e arrondissements)",
+      "courriel": "cdif.paris1@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "01 53 27 45 77",
+      "adressePostale": "6 rue Paganini, 75020 Paris",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/ile-de-france/paris/eccc99a7-a7cd-41e4-ace6-92c070366b1f"
+    },
+    {
+      "i": 103,
+      "id": "685879b4-316b-4992-8518-fec2189f9ce1",
+      "nom": "Service départemental des impôts fonciers (SDIF) Seine-Maritime - Rouen",
+      "courriel": "sdif76.ptgc@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 32 18 93 02",
+      "adressePostale": "38 Cours Clemenceau, 76037 Rouen Cedex 1",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/normandie/seine-maritime/685879b4-316b-4992-8518-fec2189f9ce1"
+    },
+    {
+      "i": 104,
+      "id": "258ef3af-e8c6-404d-835b-1457e2129587",
+      "nom": "Service départemental des Impôts Fonciers (SDIF) Seine-et-Marne - Meaux",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "01 64 35 21 23",
+      "adressePostale": "Centre des finances publiques, Service des impots des particuliers, 21 place de l'Europe, 77337 Meaux Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/ile-de-france/seine-et-marne/258ef3af-e8c6-404d-835b-1457e2129587"
+    },
+    {
+      "i": 105,
+      "id": "a03b60f7-4f7d-454f-be9b-3c3f5005265a",
+      "nom": "Service départemental des impôts fonciers (SDIF) Yvelines - Rambouillet",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "01 34 94 16 00",
+      "adressePostale": "Centre des finances publiques, 2 rue Louis Pasteur, 78514 Rambouillet Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/ile-de-france/yvelines/a03b60f7-4f7d-454f-be9b-3c3f5005265a"
+    },
+    {
+      "i": 106,
+      "id": "42c2ceeb-947d-44c9-8994-40b6a033f213",
+      "nom": "Service départemental des impôts fonciers (SDIF) Deux-Sèvres - Bressuire",
+      "courriel": "sdif79.bressuire@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 49 81 58 12",
+      "adressePostale": "Centre des finances publiques, 124 boulevard de Poitiers, CS 20290, 79308 Bressuire Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/deux-sevres/42c2ceeb-947d-44c9-8994-40b6a033f213"
+    },
+    {
+      "i": 107,
+      "id": "7ef7df48-3404-4e50-984b-971ae10e7255",
+      "nom": "Service départemental des impôts fonciers (SDIF) Deux-Sèvres - Niort",
+      "courriel": "sdif79.niort@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 49 09 98 66",
+      "adressePostale": "Centre des finances publiques, 171 avenue de Paris, BP 59126, 79061 Niort Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/deux-sevres/7ef7df48-3404-4e50-984b-971ae10e7255"
+    },
+    {
+      "i": 108,
+      "id": "446798e8-c629-4f3e-bca9-f0902bf398a0",
+      "nom": "Service départemental des impôts fonciers (SDIF) Maine-et-Loire - Angers",
+      "courriel": "sdif49.angers@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 41 74 53 40",
+      "adressePostale": "Batiment C, 15 bis rue Dupetit-Thouars, Cite administrative, 49047 Angers Cedex 01",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/pays-de-la-loire/maine-et-loire/446798e8-c629-4f3e-bca9-f0902bf398a0"
+    },
+    {
+      "i": 109,
+      "id": "5f419d2c-6eaa-42f3-ace6-92f4ad15c716",
+      "nom": "Service départemental des impôts fonciers (SDIF) Maine-et-Loire - Cholet",
+      "courriel": "sdif49.cholet@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 41 49 58 28",
+      "adressePostale": "Hotel des finances publiques, 42 rue du Planty, 49321 Cholet Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/pays-de-la-loire/maine-et-loire/5f419d2c-6eaa-42f3-ace6-92f4ad15c716"
+    },
+    {
+      "i": 110,
+      "id": "082f52b5-838e-46db-9ae8-5e9a5805acfc",
+      "nom": "Service départemental des impôts fonciers (SDIF) Maine-et-Loire - Saumur",
+      "courriel": "sdif49.saumur@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "02 41 83 57 00",
+      "adressePostale": "8 rue Saint-Louis, 49417 Saumur Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/pays-de-la-loire/maine-et-loire/082f52b5-838e-46db-9ae8-5e9a5805acfc"
+    },
+    {
+      "i": 111,
+      "id": "e07cb812-4b5b-4b8a-954d-a676aacd3a67",
+      "nom": "Service départemental des impôts fonciers (SDIF) Somme - Amiens",
+      "courriel": "sdif.somme@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 22 46 83 83",
+      "adressePostale": "1-3 rue Pierre-Rollin, CS 12301, 80023 Amiens Cedex 3",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/somme/e07cb812-4b5b-4b8a-954d-a676aacd3a67"
+    },
+    {
+      "i": 112,
+      "id": "6c95b6ec-3778-42a8-9183-2cb8338aae54",
+      "nom": "Service départemental des impôts fonciers (SDIF) Tarn - Albi",
+      "courriel": "sdif.tarn@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 63 48 89 89",
+      "adressePostale": "Service des impots foncier du Tarn, Antenne d'Albi, 209 rue du Roc, 81014 Albi cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/tarn/6c95b6ec-3778-42a8-9183-2cb8338aae54"
+    },
+    {
+      "i": 113,
+      "id": "9cfc4bf2-b504-42a8-8721-07cb976692ba",
+      "nom": "Service départemental des impôts fonciers (SDIF) Tarn - Castres",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "05 63 62 52 00",
+      "adressePostale": "Service des impots foncier du Tarn a Castres, 4 avenue Charles-de-Gaulle, BP 90405, 81108 Castres Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/tarn/9cfc4bf2-b504-42a8-8721-07cb976692ba"
+    },
+    {
+      "i": 114,
+      "id": "f861ecfa-b495-4c75-b2d1-34fb341c3cbb",
+      "nom": "Service départemental des impôts fonciers (SDIF) Tarn-et-Garonne - Moissac",
+      "courriel": "sdif82@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 63 04 64 00",
+      "adressePostale": "12 boulevard Lakanal, CS 20304, 82208 Moissac Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/occitanie/tarn-et-garonne/f861ecfa-b495-4c75-b2d1-34fb341c3cbb"
+    },
+    {
+      "i": 115,
+      "id": "59d76d3c-66af-4ad2-99f7-a52f18c7fa0d",
+      "nom": "Service départemental des impôts fonciers (SDIF) Var - Draguignan (antenne)",
+      "courriel": "sdif.var-draguignan@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 94 60 49 33",
+      "adressePostale": "43 Chemin Sainte-Barbe, CS 30407, 83008 Draguignan Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/provence-alpes-cote-d-azur/var/59d76d3c-66af-4ad2-99f7-a52f18c7fa0d"
+    },
+    {
+      "i": 116,
+      "id": "a75171b1-9515-4575-b2b9-f184ca366b14",
+      "nom": "Service départemental des impôts fonciers (SDIF) Var - Toulon",
+      "courriel": "sdif.var-toulon@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "04 94 03 95 00",
+      "adressePostale": "Cite administrative des Lices, 98 Rue Montebello, CS 20127, 83071 Toulon Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/provence-alpes-cote-d-azur/var/a75171b1-9515-4575-b2b9-f184ca366b14"
+    },
+    {
+      "i": 117,
+      "id": "3588b70f-ee74-443a-854e-bcdddaea2a58",
+      "nom": "Service départemental des impôts fonciers (SDIF) Vaucluse - Avignon",
+      "courriel": "sdif.vaucluse@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "04 90 27 71 91",
+      "adressePostale": "Avenue du 7eme genie, Cite administrative, BP 91088, 84097 Avignon Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/provence-alpes-cote-d-azur/vaucluse/3588b70f-ee74-443a-854e-bcdddaea2a58"
+    },
+    {
+      "i": 118,
+      "id": "1c0485af-929f-48b1-9df4-d72a8b6f23bd",
+      "nom": "Service départemental des impôts fonciers (SDIF) Vaucluse - Orange",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": null,
+      "adressePostale": "132 allee d'Auvergne, Centre des Finances Publiques, BP 50200, 84873 Orange Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/provence-alpes-cote-d-azur/vaucluse/1c0485af-929f-48b1-9df4-d72a8b6f23bd"
+    },
+    {
+      "i": 119,
+      "id": "cdfde853-6ee7-4450-a1d9-56c6c5c5e0c6",
+      "nom": "Service départemental des impôts fonciers (SDIF)  Vendée - La Roche-sur-Yon",
+      "courriel": "sdif.vendee@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 51 45 11 70",
+      "adressePostale": "Centre des finances publiques, Cite administrative Travot, 12 rue du 93e Regiment d'Infanterie, 85024 La Roche-sur-Yon Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/pays-de-la-loire/vendee/cdfde853-6ee7-4450-a1d9-56c6c5c5e0c6"
+    },
+    {
+      "i": 120,
+      "id": "eb3fda57-13df-444b-b5b6-ca5326a36f99",
+      "nom": "Service départemental des impôts fonciers (SDIF) Vienne - Poitiers",
+      "courriel": "sdif86.poitiers@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 49 38 24 00",
+      "adressePostale": "Centre des finances publiques, 15 rue de Slovenie, 86000 Poitiers",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/vienne/eb3fda57-13df-444b-b5b6-ca5326a36f99"
+    },
+    {
+      "i": 121,
+      "id": "00729758-81e0-4623-873b-ec7972627415",
+      "nom": "Service départemental des impôts fonciers (SDIF) Haute-Vienne - Limoges",
+      "courriel": "sdif.haute-vienne@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 55 45 59 04",
+      "adressePostale": "Centre des finances publiques, 30 rue Cruveilhier, 87050 Limoges Cedex 2",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/nouvelle-aquitaine/haute-vienne/00729758-81e0-4623-873b-ec7972627415"
+    },
+    {
+      "i": 122,
+      "id": "ac0c74c8-e6a8-4055-bbfd-53fcd013961a",
+      "nom": "Service départemental des impôts fonciers (SDIF) Vosges - Epinal",
+      "courriel": "sdif88@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "03 29 69 22 95",
+      "adressePostale": "1 rue du Docteur-Laflotte, BP 41009, 88060 Epinal Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/grand-est/vosges/ac0c74c8-e6a8-4055-bbfd-53fcd013961a"
+    },
+    {
+      "i": 123,
+      "id": "d944623e-b166-463d-9779-896de24e8286",
+      "nom": "Service départemental des impôts fonciers (SDIF) Yonne - Auxerre",
+      "courriel": "sdif.yonne@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "03 86 72 50 04",
+      "adressePostale": "8 rue des Moreaux, Centre des finances publiques d'Auxerre, BP 29, 89010 Auxerre Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bourgogne-franche-comte/yonne/d944623e-b166-463d-9779-896de24e8286"
+    },
+    {
+      "i": 124,
+      "id": "cb4b7881-5edb-4d9a-a6f9-a23e30d7a4bf",
+      "nom": "Service départemental des impôts fonciers (SDIF) Territoire de Belfort",
+      "courriel": "sdif.belfort@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "03 84 58 80 02",
+      "adressePostale": "Centre des finances publiques, 1 place de la Revolution-Francaise, 90022 Belfort Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/bourgogne-franche-comte/territoire-de-belfort/cb4b7881-5edb-4d9a-a6f9-a23e30d7a4bf"
+    },
+    {
+      "i": 125,
+      "id": "63498e0b-b493-4f7e-88f3-383cf62ef9e5",
+      "nom": "Service départemental des impôts fonciers (SDIF) Essonne - Corbeil-Essonnes",
+      "courriel": "cdif.corbeil@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "01 60 90 51 00",
+      "adressePostale": "Centre des finances publiques, 75-79 rue Feray, 91107 Corbeil-Essonnes Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/ile-de-france/essonne/63498e0b-b493-4f7e-88f3-383cf62ef9e5"
+    },
+    {
+      "i": 126,
+      "id": "006e20e8-eabb-4f38-b4c0-70f6c9b81626",
+      "nom": "Service départemental des impôts fonciers (SDIF) Hauts-de-Seine - Nanterre",
+      "courriel": null,
+      "origineCourriel": null,
+      "etatAdresse": "absente",
+      "telephone": "01 41 37 83 00",
+      "adressePostale": "7 boulevard des Bouvets, CS 80309, 92741 Nanterre Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/ile-de-france/hauts-de-seine/006e20e8-eabb-4f38-b4c0-70f6c9b81626"
+    },
+    {
+      "i": 127,
+      "id": "0df47d44-5a41-455d-89c9-a2de16ef987d",
+      "nom": "Service départemental des impôts fonciers (SDIF) Seine-Saint-Denis - Bobigny",
+      "courriel": "sdif.seine-saint-denis@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "01 49 15 52 00",
+      "adressePostale": "15-17 promenade Jean-Rostand, Immeuble Le Carre-Plaza, 93022 Bobigny",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/ile-de-france/seine-saint-denis/0df47d44-5a41-455d-89c9-a2de16ef987d"
+    },
+    {
+      "i": 128,
+      "id": "e223311c-e6d0-4b36-bdee-02a895180eae",
+      "nom": "Service départemental des impôts fonciers (SDIF) Val-de-Marne - Créteil",
+      "courriel": "sdif.creteil@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "01 43 99 36 82",
+      "adressePostale": "1 place du General-Pierre-Billotte, 94037 Creteil Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/ile-de-france/val-de-marne/e223311c-e6d0-4b36-bdee-02a895180eae"
+    },
+    {
+      "i": 129,
+      "id": "7b5fa692-8100-45a1-8e1e-6b3361e18a5a",
+      "nom": "Service départemental des impôts fonciers (SDIF) Val-d'Oise - Cergy",
+      "courriel": "sdif.val-doise@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "01 30 75 72 00",
+      "adressePostale": "Service departemental des impots foncier du Val-d'Oise, 2 avenue Bernard-Hirsch, CS 20106, 95093 Cergy-Pontoise Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/ile-de-france/val-d-oise/7b5fa692-8100-45a1-8e1e-6b3361e18a5a"
+    },
+    {
+      "i": 130,
+      "id": "ea4ff203-de1b-43ec-96ee-178f6eaba534",
+      "nom": "Service départemental des impôts fonciers (SDIF) Guadeloupe - Basse-Terre",
+      "courriel": "centre.des.impots.foncier.basse-terre@dgi.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 90 99 47 00",
+      "adressePostale": "Desmarais, 97100 Basse-Terre",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/guadeloupe/guadeloupe/ea4ff203-de1b-43ec-96ee-178f6eaba534"
+    },
+    {
+      "i": 131,
+      "id": "a0f09b68-a29f-41d4-a149-60cef04dcfab",
+      "nom": "Service départemental des impôts fonciers (SDIF) Martinique - Fort-de-France",
+      "courriel": "cdif.fort-de-france@dgfip.finances.gouv.fr",
+      "origineCourriel": "pointage telephonique, aout 2026",
+      "etatAdresse": "connue",
+      "telephone": "05 96 59 55 76",
+      "adressePostale": "Centre des finances publiques, Route de Cluny, BP 605, 97261 Fort-de-France Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/martinique/martinique/a0f09b68-a29f-41d4-a149-60cef04dcfab"
+    },
+    {
+      "i": 132,
+      "id": "7616ad6e-cac2-46d3-8328-0cae913633f6",
+      "nom": "Service départemental des impôts fonciers (SDIF) Guyane - Cayenne",
+      "courriel": "sdif.guyane@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "05 94 28 99 54",
+      "adressePostale": "Centre des finances publiques de Buzare, Rue Carlos-Finlay, 97300 Cayenne",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/guyane/guyane/7616ad6e-cac2-46d3-8328-0cae913633f6"
+    },
+    {
+      "i": 133,
+      "id": "82ecee4d-0474-49ec-9179-dd43963df4c7",
+      "nom": "Service départemental des impôts fonciers (SDIF) La Réunion - Saint-Denis",
+      "courriel": "sdif.reunion@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 62 48 68 40",
+      "adressePostale": "1 rue Champ-Fleuri, CS 91013, 97744 Saint-Denis Cedex 9",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/la-reunion/la-reunion/82ecee4d-0474-49ec-9179-dd43963df4c7"
+    },
+    {
+      "i": 134,
+      "id": "66a21ef0-c311-4e2c-accd-3f06959de1ed",
+      "nom": "Service départemental des impôts fonciers (SDIF) La Réunion - Saint-Pierre",
+      "courriel": "sdif.reunion@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 62 35 98 00",
+      "adressePostale": "1 rue du Pere-Raimbault, CS 97751, 97751 Saint-Pierre Cedex",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/la-reunion/la-reunion/66a21ef0-c311-4e2c-accd-3f06959de1ed"
+    },
+    {
+      "i": 135,
+      "id": "91bea11a-5a4c-4047-8a6a-2d16dc3e741c",
+      "nom": "Service départemental des impôts fonciers (SDIF) Mayotte - Mamoudzou",
+      "courriel": "cdif.mamoudzou@dgfip.finances.gouv.fr",
+      "origineCourriel": "annuaire DILA, moisson du 19/08/2026",
+      "etatAdresse": "connue",
+      "telephone": "02 69 61 81 10",
+      "adressePostale": "Boulevard Halidi-Selemani, BP 501, 97600 Mamoudzou",
+      "urlFiche": "https://lannuaire.service-public.gouv.fr/mayotte/mayotte/91bea11a-5a4c-4047-8a6a-2d16dc3e741c"
+    }
+  ],
+  "departements": {
+    "01": {
+      "services": [
+        0
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 416,
+      "nbExceptions": 0
+    },
+    "02": {
+      "services": [
+        1
+      ],
+      "repartitionReelle": true,
+      "nbCommunes": 819,
+      "nbExceptions": 1
+    },
+    "03": {
+      "services": [
+        2
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 320,
+      "nbExceptions": 0
+    },
+    "04": {
+      "services": [
+        3
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 210,
+      "nbExceptions": 0
+    },
+    "06": {
+      "services": [
+        4,
+        5,
+        6
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 163,
+      "nbExceptions": 0
+    },
+    "07": {
+      "services": [
+        7
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 343,
+      "nbExceptions": 0
+    },
+    "08": {
+      "services": [
+        8
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 478,
+      "nbExceptions": 0
+    },
+    "09": {
+      "services": [
+        9
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 333,
+      "nbExceptions": 0
+    },
+    "10": {
+      "services": [
+        10
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 435,
+      "nbExceptions": 0
+    },
+    "11": {
+      "services": [
+        11
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 439,
+      "nbExceptions": 0
+    },
+    "12": {
+      "services": [
+        12
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 297,
+      "nbExceptions": 0
+    },
+    "13": {
+      "services": [
+        13,
+        14
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 135,
+      "nbExceptions": 0
+    },
+    "14": {
+      "services": [
+        15,
+        16,
+        17
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 698,
+      "nbExceptions": 0
+    },
+    "15": {
+      "services": [
+        18
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 263,
+      "nbExceptions": 0
+    },
+    "16": {
+      "services": [
+        19
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 389,
+      "nbExceptions": 0
+    },
+    "17": {
+      "services": [
+        20,
+        21
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 472,
+      "nbExceptions": 0
+    },
+    "18": {
+      "services": [
+        22
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 286,
+      "nbExceptions": 0
+    },
+    "19": {
+      "services": [
+        23
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 286,
+      "nbExceptions": 0
+    },
+    "21": {
+      "services": [
+        24
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 706,
+      "nbExceptions": 0
+    },
+    "22": {
+      "services": [
+        25
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 371,
+      "nbExceptions": 0
+    },
+    "23": {
+      "services": [
+        26
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 259,
+      "nbExceptions": 0
+    },
+    "24": {
+      "services": [
+        27
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 558,
+      "nbExceptions": 0
+    },
+    "25": {
+      "services": [
+        51,
+        52
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 596,
+      "nbExceptions": 0
+    },
+    "26": {
+      "services": [
+        28
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 369,
+      "nbExceptions": 0
+    },
+    "27": {
+      "services": [
+        29
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 638,
+      "nbExceptions": 0
+    },
+    "28": {
+      "services": [
+        30
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 391,
+      "nbExceptions": 0
+    },
+    "29": {
+      "services": [
+        31,
+        32
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 284,
+      "nbExceptions": 0
+    },
+    "2A": {
+      "services": [
+        33
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 124,
+      "nbExceptions": 0
+    },
+    "2B": {
+      "services": [
+        34
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 236,
+      "nbExceptions": 0
+    },
+    "30": {
+      "services": [
+        35
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 351,
+      "nbExceptions": 0
+    },
+    "31": {
+      "services": [
+        36,
+        37,
+        38,
+        39
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 590,
+      "nbExceptions": 0
+    },
+    "32": {
+      "services": [
+        40
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 465,
+      "nbExceptions": 0
+    },
+    "33": {
+      "services": [
+        41,
+        42,
+        43
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 539,
+      "nbExceptions": 0
+    },
+    "34": {
+      "services": [
+        44,
+        45
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 343,
+      "nbExceptions": 0
+    },
+    "35": {
+      "services": [
+        46
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 352,
+      "nbExceptions": 0
+    },
+    "36": {
+      "services": [
+        47
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 247,
+      "nbExceptions": 0
+    },
+    "37": {
+      "services": [
+        48
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 274,
+      "nbExceptions": 0
+    },
+    "38": {
+      "services": [
+        49,
+        50
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 527,
+      "nbExceptions": 0
+    },
+    "39": {
+      "services": [
+        53
+      ],
+      "repartitionReelle": true,
+      "nbCommunes": 522,
+      "nbExceptions": 1
+    },
+    "40": {
+      "services": [
+        54,
+        55
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 331,
+      "nbExceptions": 0
+    },
+    "41": {
+      "services": [
+        56
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 294,
+      "nbExceptions": 0
+    },
+    "42": {
+      "services": [
+        57
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 330,
+      "nbExceptions": 0
+    },
+    "43": {
+      "services": [
+        58
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 259,
+      "nbExceptions": 0
+    },
+    "44": {
+      "services": [
+        59,
+        60
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 220,
+      "nbExceptions": 0
+    },
+    "45": {
+      "services": [
+        61
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 343,
+      "nbExceptions": 0
+    },
+    "46": {
+      "services": [
+        62
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 336,
+      "nbExceptions": 0
+    },
+    "47": {
+      "services": [
+        63
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 324,
+      "nbExceptions": 0
+    },
+    "48": {
+      "services": [
+        64
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 184,
+      "nbExceptions": 0
+    },
+    "49": {
+      "services": [
+        108,
+        109,
+        110
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 370,
+      "nbExceptions": 0
+    },
+    "50": {
+      "services": [
+        65,
+        66,
+        67
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 593,
+      "nbExceptions": 0
+    },
+    "51": {
+      "services": [
+        68
+      ],
+      "repartitionReelle": true,
+      "nbCommunes": 627,
+      "nbExceptions": 1
+    },
+    "52": {
+      "services": [
+        69
+      ],
+      "repartitionReelle": true,
+      "nbCommunes": 528,
+      "nbExceptions": 1
+    },
+    "53": {
+      "services": [
+        70
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 262,
+      "nbExceptions": 0
+    },
+    "54": {
+      "services": [
+        71
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 594,
+      "nbExceptions": 0
+    },
+    "56": {
+      "services": [
+        72
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 258,
+      "nbExceptions": 0
+    },
+    "57": {
+      "services": [
+        73,
+        74
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 733,
+      "nbExceptions": 0
+    },
+    "58": {
+      "services": [
+        75
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 313,
+      "nbExceptions": 0
+    },
+    "59": {
+      "services": [
+        76,
+        77,
+        78
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 656,
+      "nbExceptions": 0
+    },
+    "60": {
+      "services": [
+        79
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 688,
+      "nbExceptions": 0
+    },
+    "61": {
+      "services": [
+        80
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 498,
+      "nbExceptions": 0
+    },
+    "62": {
+      "services": [
+        81,
+        82,
+        83,
+        84
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 895,
+      "nbExceptions": 0
+    },
+    "63": {
+      "services": [
+        85
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 468,
+      "nbExceptions": 0
+    },
+    "64": {
+      "services": [
+        86,
+        87
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 558,
+      "nbExceptions": 0
+    },
+    "65": {
+      "services": [
+        88
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 476,
+      "nbExceptions": 0
+    },
+    "66": {
+      "services": [
+        89
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 226,
+      "nbExceptions": 0
+    },
+    "67": {
+      "services": [
+        90
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 557,
+      "nbExceptions": 0
+    },
+    "68": {
+      "services": [
+        91,
+        92
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 374,
+      "nbExceptions": 0
+    },
+    "69": {
+      "services": [
+        93
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 301,
+      "nbExceptions": 0
+    },
+    "70": {
+      "services": [
+        94
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 566,
+      "nbExceptions": 0
+    },
+    "71": {
+      "services": [
+        95
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 574,
+      "nbExceptions": 0
+    },
+    "72": {
+      "services": [
+        96
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 371,
+      "nbExceptions": 0
+    },
+    "73": {
+      "services": [
+        97,
+        98
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 314,
+      "nbExceptions": 0
+    },
+    "74": {
+      "services": [
+        99,
+        100
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 291,
+      "nbExceptions": 0
+    },
+    "75": {
+      "services": [
+        101,
+        102
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 21,
+      "nbExceptions": 0
+    },
+    "76": {
+      "services": [
+        103
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 746,
+      "nbExceptions": 0
+    },
+    "77": {
+      "services": [
+        104
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 519,
+      "nbExceptions": 0
+    },
+    "78": {
+      "services": [
+        105
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 261,
+      "nbExceptions": 0
+    },
+    "79": {
+      "services": [
+        106,
+        107
+      ],
+      "repartitionReelle": true,
+      "nbCommunes": 321,
+      "nbExceptions": 1
+    },
+    "80": {
+      "services": [
+        111
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 804,
+      "nbExceptions": 0
+    },
+    "81": {
+      "services": [
+        112,
+        113
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 321,
+      "nbExceptions": 0
+    },
+    "82": {
+      "services": [
+        114
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 195,
+      "nbExceptions": 0
+    },
+    "83": {
+      "services": [
+        115,
+        116
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 153,
+      "nbExceptions": 0
+    },
+    "84": {
+      "services": [
+        117,
+        118
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 151,
+      "nbExceptions": 0
+    },
+    "85": {
+      "services": [
+        119
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 287,
+      "nbExceptions": 0
+    },
+    "86": {
+      "services": [
+        120
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 289,
+      "nbExceptions": 0
+    },
+    "87": {
+      "services": [
+        121
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 204,
+      "nbExceptions": 0
+    },
+    "88": {
+      "services": [
+        122
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 514,
+      "nbExceptions": 0
+    },
+    "89": {
+      "services": [
+        123
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 470,
+      "nbExceptions": 0
+    },
+    "90": {
+      "services": [
+        124
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 101,
+      "nbExceptions": 0
+    },
+    "91": {
+      "services": [
+        125
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 195,
+      "nbExceptions": 0
+    },
+    "92": {
+      "services": [
+        126
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 36,
+      "nbExceptions": 0
+    },
+    "93": {
+      "services": [
+        127
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 40,
+      "nbExceptions": 0
+    },
+    "94": {
+      "services": [
+        128
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 47,
+      "nbExceptions": 0
+    },
+    "95": {
+      "services": [
+        129
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 183,
+      "nbExceptions": 0
+    },
+    "971": {
+      "services": [
+        130
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 32,
+      "nbExceptions": 0
+    },
+    "972": {
+      "services": [
+        131
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 34,
+      "nbExceptions": 0
+    },
+    "973": {
+      "services": [
+        132
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 22,
+      "nbExceptions": 0
+    },
+    "974": {
+      "services": [
+        133,
+        134
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 24,
+      "nbExceptions": 0
+    },
+    "976": {
+      "services": [
+        135
+      ],
+      "repartitionReelle": false,
+      "nbCommunes": 17,
+      "nbExceptions": 0
+    }
+  },
+  "communesExceptions": {
+    "02285": [
+      76,
+      77,
+      78
+    ],
+    "39012": [
+      51,
+      52
+    ],
+    "51494": [
+      69
+    ],
+    "52210": [
+      94
+    ],
+    "79224": [
+      108,
+      109,
+      110
+    ],
+    "75101": [
+      101
+    ],
+    "75102": [
+      101
+    ],
+    "75103": [
+      101
+    ],
+    "75104": [
+      101
+    ],
+    "75105": [
+      101
+    ],
+    "75106": [
+      101
+    ],
+    "75107": [
+      101
+    ],
+    "75108": [
+      102
+    ],
+    "75109": [
+      101
+    ],
+    "75110": [
+      101
+    ],
+    "75111": [
+      102
+    ],
+    "75112": [
+      102
+    ],
+    "75113": [
+      101
+    ],
+    "75114": [
+      101
+    ],
+    "75115": [
+      101
+    ],
+    "75116": [
+      101
+    ],
+    "75117": [
+      102
+    ],
+    "75118": [
+      102
+    ],
+    "75119": [
+      102
+    ],
+    "75120": [
+      102
+    ]
   }
- },
- "communes": {
-  "75101": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75102": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75103": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75104": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75105": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75106": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75107": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75109": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75110": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75113": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75114": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75115": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75116": {
-   "departement": "75",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "SDIF Ile-de-France - Paris 2",
-   "courriel": null
-  },
-  "75108": {
-   "departement": "75",
-   "serviceId": "eccc99a7-a7cd-41e4-ace6-92c070366b1f",
-   "service": "SDIF Ile-de-France - Paris 1",
-   "courriel": null
-  },
-  "75111": {
-   "departement": "75",
-   "serviceId": "eccc99a7-a7cd-41e4-ace6-92c070366b1f",
-   "service": "SDIF Ile-de-France - Paris 1",
-   "courriel": null
-  },
-  "75112": {
-   "departement": "75",
-   "serviceId": "eccc99a7-a7cd-41e4-ace6-92c070366b1f",
-   "service": "SDIF Ile-de-France - Paris 1",
-   "courriel": null
-  },
-  "75117": {
-   "departement": "75",
-   "serviceId": "eccc99a7-a7cd-41e4-ace6-92c070366b1f",
-   "service": "SDIF Ile-de-France - Paris 1",
-   "courriel": null
-  },
-  "75118": {
-   "departement": "75",
-   "serviceId": "eccc99a7-a7cd-41e4-ace6-92c070366b1f",
-   "service": "SDIF Ile-de-France - Paris 1",
-   "courriel": null
-  },
-  "75119": {
-   "departement": "75",
-   "serviceId": "eccc99a7-a7cd-41e4-ace6-92c070366b1f",
-   "service": "SDIF Ile-de-France - Paris 1",
-   "courriel": null
-  },
-  "75120": {
-   "departement": "75",
-   "serviceId": "eccc99a7-a7cd-41e4-ace6-92c070366b1f",
-   "service": "SDIF Ile-de-France - Paris 1",
-   "courriel": null
-  },
-  "75056": {
-   "departement": "75",
-   "serviceId": null,
-   "service": null,
-   "courriel": null,
-   "note": "Code de la commune de Paris dans son ensemble. Le cadastre parisien étant tenu par arrondissement, une référence portant 75056 est à requalifier en 751xx avant envoi."
-  }
- },
- "servicesAPointer": [
-  {
-   "departement": "03",
-   "nomDepartement": "Allier",
-   "serviceId": "e0963bbf-63bc-479b-bac4-18f669241fca",
-   "service": "Service départemental des impôts fonciers (SDIF) Allier - Cusset",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 70 30 85 76",
-   "adressePostale": "8 rue du Bief, BP 60092, 03307 Cusset Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "06",
-   "nomDepartement": "Alpes-Maritimes",
-   "serviceId": "a8ece9b4-41b9-4809-8ba4-1bbce22e9e36",
-   "service": "Service départemental des impôts fonciers (SDIF) Alpes-Maritimes - Antibes",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 92 93 77 77",
-   "adressePostale": "Centre des finances publiques, 40 chemin de la Colle, 06160 Antibes | Centre des finances publiques, 40 chemin de la Colle, CS 20129, 06605 Antibes Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "06",
-   "nomDepartement": "Alpes-Maritimes",
-   "serviceId": "4353ddb6-a942-476c-9eb1-847078617699",
-   "service": "Service départemental des impôts fonciers (SDIF) Alpes-Maritimes - Grasse",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 93 40 36 00",
-   "adressePostale": "29 traverse de la Paoute, Grasse | 29 traverse de la Paoute, BP 23150, 06131 Grasse Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "06",
-   "nomDepartement": "Alpes-Maritimes",
-   "serviceId": "21a6982f-84ef-4f5d-bdc2-6acb6452e54c",
-   "service": "Service départemental des impôts fonciers (SDIF) Alpes-Maritimes - Nice",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 92 09 45 00",
-   "adressePostale": "Centre des finances publiques, 22 rue Joseph-Cadeï, CS 63151, 06172 Nice Cedex 2",
-   "courriel": null
-  },
-  {
-   "departement": "11",
-   "nomDepartement": "Aude",
-   "serviceId": "7c78ac05-f813-4118-ac3e-5d03ac0257fd",
-   "service": "Service départemental des impôts fonciers (SDIF) Aude - Carcassonne",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 68 77 44 44",
-   "adressePostale": "Centre des finances publiques, Cité administrative, Place Gaston Jourdanne, 11807 Carcassonne Cedex 9",
-   "courriel": null
-  },
-  {
-   "departement": "13",
-   "nomDepartement": "Bouche-du-Rhône",
-   "serviceId": "40482595-2d61-4b7c-b574-049c4a6acb7f",
-   "service": "Centre des impôts fonciers (CDIF) Bouche-du-Rhône - Marseille",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "cdif.aix-en-provence@dgfip.finances.gouv.fr",
-   "telephone": "04 88 49 27 90",
-   "adressePostale": "22 rue borde, 13008 Marseille | 22 rue borde, 13357 Marseille Cedex 20",
-   "courriel": null
-  },
-  {
-   "departement": "17",
-   "nomDepartement": "Charente-Maritime",
-   "serviceId": "718fd8c2-b453-43bf-af84-0c2248ddcffe",
-   "service": "Service départemental des impôts fonciers (SDIF) Charente-Maritime - La Rochelle",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 16 59 09 08",
-   "adressePostale": "Centre des finances publiques, 26 avenue de Fétilly, BP 80808, 17020 La Rochelle",
-   "courriel": null
-  },
-  {
-   "departement": "17",
-   "nomDepartement": "Charente-Maritime",
-   "serviceId": "97079c57-5986-4cd2-87fc-bf275a515ce7",
-   "service": "Service départemental des impôts fonciers (SDIF) Charente-Maritime - Saintes",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 46 96 52 60",
-   "adressePostale": "4 cours Charles-de-Gaulle, 17108 Saintes Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "18",
-   "nomDepartement": "Cher",
-   "serviceId": "f5b782ef-ae3a-4b23-b264-c56400339b47",
-   "service": "Service départemental des impôts fonciers (SDIF) Cher - Bourges",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 48 27 18 26",
-   "adressePostale": "Centre administratif Condé, 2 rue Jacques-Rimbault, 18013 Bourges Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "19",
-   "nomDepartement": "Corrèze",
-   "serviceId": "51e2963f-3600-48cf-bdca-aecb246f236e",
-   "service": "Service départemental des impôts fonciers (SDIF) Corrèze - Brive-la-Gaillarde",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 55 18 31 00",
-   "adressePostale": "50 boulevard Gontran-Royer, 19100 Brive-la-Gaillarde",
-   "courriel": null
-  },
-  {
-   "departement": "21",
-   "nomDepartement": "Côte-d'Or",
-   "serviceId": "c656f552-49c4-46aa-99c8-2c055b5cb96a",
-   "service": "Service départemental des impôts fonciers (SDIF) Côte-d'Or - Dijon",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "03 80 28 65 00",
-   "adressePostale": "25 rue de la Boudronnée, BP 1549, 21047 Dijon Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "22",
-   "nomDepartement": "Côtes d'Armor",
-   "serviceId": "94d26abd-77e8-45dc-a043-6d8a0c6d50c0",
-   "service": "Service départemental des impôts fonciers (SDIF) Côtes d'Armor - Saint-Brieuc",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 96 01 42 42",
-   "adressePostale": "4 rue Abbé-Garnier, 22000 Saint-Brieuc | 4 rue Abbé-Garnier, CS 22054, 22022 Saint-Brieuc Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "25",
-   "nomDepartement": "Doubs",
-   "serviceId": "d549e16d-c65b-4338-b8c3-07a8976fae88",
-   "service": "Service départemental des impôts fonciers (SDIF) Doubs - Montbéliard",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "sdif.doubs@dgfip.finances.gouv.fr",
-   "telephone": "03 81 65 65 50",
-   "adressePostale": "Centre des finances publiques, 1 rue Pierre-Brossolette, 25214 Montbéliard Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "26",
-   "nomDepartement": "Drôme",
-   "serviceId": "57e8e643-0f70-479f-bcff-28be44df6fd2",
-   "service": "Service départemental des impôts fonciers (SDIF) Drôme - Valence",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 75 79 50 21",
-   "adressePostale": "Centre des finances publiques, Centre administratif Le Polygone, 15 avenue de Romans, BP 2116, 26021 Valence Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "28",
-   "nomDepartement": "Eure-et-Loir",
-   "serviceId": "56820c94-1618-4b61-b2a4-cb4ed22b0663",
-   "service": "Service départemental des impôts fonciers (SDIF) Eure-et-Loir - Chartres",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 37 18 70 83",
-   "adressePostale": "Service départemental des impôts foncier d'Eure-et-Loir, 5 place de la République, 28019 Chartres Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "2A",
-   "nomDepartement": "Corse-du-Sud",
-   "serviceId": "1eeee893-d4f6-4ff3-9d57-18c20392b989",
-   "service": "Service départemental des impôts fonciers (SDIF) Corse-du-Sud - Ajaccio",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 95 50 35 00",
-   "adressePostale": "Centre des finances publiques, 6 parc Cuneo d'Ornano, BP 409, 20195 Ajaccio Cedex 1",
-   "courriel": null
-  },
-  {
-   "departement": "2B",
-   "nomDepartement": "Haute-Corse",
-   "serviceId": "0f6758c0-e49c-4eed-817e-6dc45a0da8d4",
-   "service": "Service départemental des impôts fonciers (SDIF) Haute-Corse - Bastia",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 95 32  93 93",
-   "adressePostale": "Centre des finances publiques, 67 rue des Horizons-Bleus, 20402 Bastia Cedes 9",
-   "courriel": null
-  },
-  {
-   "departement": "30",
-   "nomDepartement": "Gard",
-   "serviceId": "1d903167-8c49-4808-b316-785a78afcb7a",
-   "service": "Service départemental des impôts fonciers (SDIF) Gard - Nîmes",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 66 87 60 60",
-   "adressePostale": "67 rue Salomon-Reinach, 30032 Nimes Cedex 1",
-   "courriel": null
-  },
-  {
-   "departement": "31",
-   "nomDepartement": "Haute-Garonne",
-   "serviceId": "385da18a-906d-4207-850a-d3079df1549a",
-   "service": "Service départemental des impôts fonciers (SDIF) Haute-Garonne - Muret",
-   "categorie": "C",
-   "situation": "Rabattu sur une autre boite du département",
-   "rabattementActuel": "cdif.colomiers@dgfip.finances.gouv.fr, cdif.saint-gaudens@dgfip.finances.gouv.fr",
-   "telephone": "05 62 23 12 00",
-   "adressePostale": "159 avenue Jacques-Douzans, 31608 Muret Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "31",
-   "nomDepartement": "Haute-Garonne",
-   "serviceId": "a69ebf56-1cea-43cb-a0a3-38382b64fa16",
-   "service": "Service départemental des impôts fonciers (SDIF) Haute-Garonne - Toulouse",
-   "categorie": "C",
-   "situation": "Rabattu sur une autre boite du département",
-   "rabattementActuel": "cdif.colomiers@dgfip.finances.gouv.fr, cdif.saint-gaudens@dgfip.finances.gouv.fr",
-   "telephone": "05 34 31 11 11",
-   "adressePostale": "Centre des finances publiques, 33 rue Jeanne Marvig, BP 64251, 31404 Toulouse Cedex 4",
-   "courriel": null
-  },
-  {
-   "departement": "33",
-   "nomDepartement": "Gironde",
-   "serviceId": "0309a6a4-9bb2-4273-a72d-5eda0c17f32f",
-   "service": "Service départemental des impôts fonciers (SDIF) Gironde - Bordeaux",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 56 63 66 90",
-   "adressePostale": "Cité administrative, Rue Jules-Ferry, 33090 Bordeaux Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "33",
-   "nomDepartement": "Gironde",
-   "serviceId": "468a1e48-8036-4e92-940d-096cfedabdd7",
-   "service": "Service départemental des impôts fonciers (SDIF) Gironde - Langon",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 56 63 66 90",
-   "adressePostale": "Centre des Finances Publiques, 70 cours du Général-Leclerc, 33213 Langon Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "33",
-   "nomDepartement": "Gironde",
-   "serviceId": "c3b39929-46af-4b27-ae78-6a415516f2a9",
-   "service": "Service départemental des impôts fonciers (SDIF) Gironde - Libourne",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 56 63 66 90",
-   "adressePostale": "Centre des finances publiques, Rue du Président-Wilson, BP 201, 33305 Libourne Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "37",
-   "nomDepartement": "Indre-et-Loire",
-   "serviceId": "83f54557-4273-4fe5-8aa4-bf3dcfeba28a",
-   "service": "Service départemental des impôts fonciers (SDIF) Indre-et-Loire - Tours",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 47 21 71 67",
-   "adressePostale": "40 rue Édouard-Vaillant, 37060 Tours Cedex 9",
-   "courriel": null
-  },
-  {
-   "departement": "38",
-   "nomDepartement": "Isère",
-   "serviceId": "4c439af2-e2d5-43d4-95fb-32c18d8dfa55",
-   "service": "Service départemental des Impôts fonciers (SDIF) Isère - Grenoble",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 80 42 87 38",
-   "adressePostale": "38 avenue Rhin et Danube, 38100 Grenoble",
-   "courriel": null
-  },
-  {
-   "departement": "38",
-   "nomDepartement": "Isère",
-   "serviceId": "bd611edf-3b80-4f69-8daa-342956dbdfe1",
-   "service": "Service départemental des impôts fonciers (SDIF) Isère - Vienne",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 81 62 08 04",
-   "adressePostale": "12 rue jean Moulin, 38200 Vienne",
-   "courriel": null
-  },
-  {
-   "departement": "39",
-   "nomDepartement": "Doubs / Jura",
-   "serviceId": "d549e16d-c65b-4338-b8c3-07a8976fae88",
-   "service": "Service départemental des impôts fonciers (SDIF) Doubs - Montbéliard",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "sdif.doubs@dgfip.finances.gouv.fr",
-   "telephone": "03 81 65 65 50",
-   "adressePostale": "Centre des finances publiques, 1 rue Pierre-Brossolette, 25214 Montbéliard Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "39",
-   "nomDepartement": "Doubs / Jura",
-   "serviceId": "eca4eefa-c96b-4602-9d17-e54ac7b1ddcc",
-   "service": "Service départemental des impôts fonciers (SDIF) Jura - Champagnole",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "sdif.doubs@dgfip.finances.gouv.fr",
-   "telephone": "03 84 52 01 31",
-   "adressePostale": "3 rue Victor-Bérard, 39300 Champagnole",
-   "courriel": null
-  },
-  {
-   "departement": "40",
-   "nomDepartement": "Landes",
-   "serviceId": "d8ebf123-dd82-441a-878f-0f4c5aed3bdf",
-   "service": "Service départemental des impôts fonciers (SDIF) Landes - Mont-de-Marsan",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "sdif40.dax@dgfip.finances.gouv.fr",
-   "telephone": "05 58 06 61 84",
-   "adressePostale": "Centre des Finances publiques - SDIF, 12 avenue de Dagas, 40000 Mont-de-Marsan | Centre des Finances publiques - SDIF, 12 avenue de Dagas, 40022 Mont-de-Marsan Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "41",
-   "nomDepartement": "Loir-et-Cher",
-   "serviceId": "df8e3ee7-c5eb-4049-964e-006eac47f331",
-   "service": "Service départemental des impôts fonciers (SDIF) Loir-et-Cher - Blois",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 54 55 70 51",
-   "adressePostale": "Centre des finances publiques, 10 rue Louis-Bodin, CS 50001, 41026 Blois Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "42",
-   "nomDepartement": "Auvergne-Rhône-Alpes",
-   "serviceId": "c4f5edc2-5d17-4627-8524-3095b02207cb",
-   "service": "Service départemental des impôts fonciers (SDIF) Auvergne-Rhône-Alpes - Saint-Etienne",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 81 64 20 60",
-   "adressePostale": "Centre des finances publiques, 8 rue de la Convention, 42100 Saint-Étienne",
-   "courriel": null
-  },
-  {
-   "departement": "44",
-   "nomDepartement": "Loire-Atlantique / Saint-Nazaire",
-   "serviceId": "c9886c9a-ed9a-413f-9036-04190d7f2c13",
-   "service": "Service départemental des impôts fonciers (SDIF) Loire-Atlantique",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 51 12 86 36",
-   "adressePostale": "Centre des finances publiques, 2 rue du général Margueritte, CS 13513, 44035 Nantes Cedex 1",
-   "courriel": null
-  },
-  {
-   "departement": "44",
-   "nomDepartement": "Loire-Atlantique / Saint-Nazaire",
-   "serviceId": "ee3ed73d-647a-4803-9560-bec5f355db88",
-   "service": "Service départemental des impôts fonciers (SDIF) Saint-Nazaire",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 49 63 41 28",
-   "adressePostale": "Centre des finances publiques, 54 avenue du Général-de-Gaulle, 44600 Saint-Nazaire",
-   "courriel": null
-  },
-  {
-   "departement": "46",
-   "nomDepartement": "Lot",
-   "serviceId": "1e0bdaed-d154-4c17-b9cf-42d7e2f56602",
-   "service": "Service départemental des impôts fonciers (SDIF) Lot - Cahors",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 65 20 33 33",
-   "adressePostale": "Centre des finances publiques, 83 rue Victor-Hugo, 46009 Cahors Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "49",
-   "nomDepartement": "Maine-et-Loire",
-   "serviceId": "446798e8-c629-4f3e-bca9-f0902bf398a0",
-   "service": "Service départemental des impôts fonciers (SDIF) Maine-et-Loire - Angers",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 41 74 53 40",
-   "adressePostale": "Bâtiment C, 15 bis rue Dupetit-Thouars, Cité administrative, 49047 Angers Cedex 01",
-   "courriel": null
-  },
-  {
-   "departement": "49",
-   "nomDepartement": "Maine-et-Loire",
-   "serviceId": "5f419d2c-6eaa-42f3-ace6-92f4ad15c716",
-   "service": "Service départemental des impôts fonciers (SDIF) Maine-et-Loire - Cholet",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 41 49 58 28",
-   "adressePostale": "Hôtel des finances publiques, 42 rue du Planty, 49321 Cholet Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "49",
-   "nomDepartement": "Maine-et-Loire",
-   "serviceId": "082f52b5-838e-46db-9ae8-5e9a5805acfc",
-   "service": "Service départemental des impôts fonciers (SDIF) Maine-et-Loire - Saumur",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 41 83 57 00",
-   "adressePostale": "8 rue Saint-Louis, 49417 Saumur Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "51",
-   "nomDepartement": "Haute-Marne / Marne",
-   "serviceId": "6e63b764-06dd-4c28-bd64-df5301244688",
-   "service": "Service départemental des impôts fonciers (SDIF) Marne - Châlons-en-Champagne",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "sdif.haute-marne@dgfip.finances.gouv.fr",
-   "telephone": "03 26 68 60 36",
-   "adressePostale": "5 rue de la Charrière, 51036 Châlons-en-Champagne Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "54",
-   "nomDepartement": "Meurthe-et-Moselle",
-   "serviceId": "5688208e-a09b-4298-b579-d109d58f7167",
-   "service": "Service départemental des impôts fonciers (SDIF) Meurthe-et-Moselle - Nancy",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "03 83 85 48 36",
-   "adressePostale": "47 rue Sainte-Catherine, 54000 Nancy | 47 rue Sainte-Catherine, BP 60042, 54000 Nancy Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "56",
-   "nomDepartement": "Morbihan",
-   "serviceId": "20baf691-3d9d-47dd-b9ba-c31b541ff6f2",
-   "service": "Service départemental des impôts fonciers (SDIF) Morbihan - Ploërmel",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 97 01 50 66",
-   "adressePostale": "23 rue du 8 mai 1945, 56800 Ploërmel | 23 rue du 8 mai 1945, CS 50290, 56802 Ploërmel cedex",
-   "courriel": null
-  },
-  {
-   "departement": "58",
-   "nomDepartement": "Nièvre",
-   "serviceId": "73d728d6-1c59-4f61-83af-ac36b6bbaf38",
-   "service": "Service départemental des impôts fonciers (SDIF) Nièvre - Nevers",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "03 86 68 49 49",
-   "adressePostale": "Service des impôts des particuliers, Centre des finances publiques, 19 rue Camille Baynac, BP 70888, 58015 Nevers cedex",
-   "courriel": null
-  },
-  {
-   "departement": "60",
-   "nomDepartement": "Oise",
-   "serviceId": "bf9e40df-bd3d-4d4b-951a-af5741b669e7",
-   "service": "Service départemental des impôts fonciers (SDIF) Oise - Creil",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "03 44 64 43 30",
-   "adressePostale": "Service départemental des impôts fonciers de l'Oise, Centre des finances publiques, 1 et 2 square Hélène-Boucher, 60831 Creil Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "62",
-   "nomDepartement": "Pas-de-Calais",
-   "serviceId": "3e144566-d070-461f-8e94-c67c95477314",
-   "service": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Arras",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "pelh.620.boulogne-sur-mer@dgfip.finances.gouv.fr",
-   "telephone": "03 21 24 68 68",
-   "adressePostale": "10 rue Diderot, CS 80020, 62034 Arras Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "62",
-   "nomDepartement": "Pas-de-Calais",
-   "serviceId": "c1db920d-eba4-4dd3-b9be-20efe3e414ac",
-   "service": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Lens",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "pelh.620.boulogne-sur-mer@dgfip.finances.gouv.fr",
-   "telephone": "03 21 08 10 10",
-   "adressePostale": "Centre des finances publiques, 7 rue Louis Armand, CS 80017, 62307 Lens Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "62",
-   "nomDepartement": "Pas-de-Calais",
-   "serviceId": "4b26fe85-2513-43fe-9586-8ec55e874f2f",
-   "service": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Saint-Omer",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "pelh.620.boulogne-sur-mer@dgfip.finances.gouv.fr",
-   "telephone": "03 21 98 76 76",
-   "adressePostale": "Centre des finances publiques, 1 allée Honoré-de-Balzac, BP 30009, 62967 Longuenesse Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "64",
-   "nomDepartement": "Pyrénées-Atlantiques",
-   "serviceId": "eb0b2e62-d085-422a-8974-0999baa9b476",
-   "service": "Service départemental des impôts fonciers (SDIF) Pyrénées-Atlantiques - Bayonne",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "sdif64@dgfip.finances.gouv.fr",
-   "telephone": "05 59 58 58 36",
-   "adressePostale": "Centre des finances publiques, 11 rue Vauban, BP 11, 64109 Bayonne Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "66",
-   "nomDepartement": "Pyrénées-Orientales",
-   "serviceId": "124ca25e-4840-406d-b4e4-74bda9942316",
-   "service": "Service départemental des impôts fonciers (SDIF) Pyrénées-Orientales - Perpignan",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 68 66 41 41",
-   "adressePostale": "Centre des finances publiques, 24 avenue de la Cote Vermeille, TSA 10009, 66961 Perpignan Cedex 9",
-   "courriel": null
-  },
-  {
-   "departement": "67",
-   "nomDepartement": "Bas-Rhin",
-   "serviceId": "ea6a4f9e-7b01-4912-9798-475844674b22",
-   "service": "Service départemental des impôts fonciers (SDIF) Bas-Rhin - Molsheim",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "03 88 47 98 31",
-   "adressePostale": "20 rue Gaston Romazzotti, 67120 Molsheim | 20 rue Gaston Romazzotti, CS 25165, 67125 Molsheim Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "68",
-   "nomDepartement": "Haut-Rhin",
-   "serviceId": "7eb8c9a4-cfd2-4135-ac53-189f7c01503a",
-   "service": "Service départemental des impôts fonciers (SDIF) Haut-Rhin - Colmar",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "03 89 24 81 17",
-   "adressePostale": "3 rue Fleischhauer, Cité administrative, 68026 Colmar Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "68",
-   "nomDepartement": "Haut-Rhin",
-   "serviceId": "99c6714e-95b9-4777-88e7-e1a67d6e6d2b",
-   "service": "Service départemental des impôts fonciers (SDIF) Haut-Rhin - Mulhouse",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "03 89 33 32 06",
-   "adressePostale": "Bâtiment C, Cité administrative, 12 rue Coehorn, 68085 Mulhouse Cedex 1",
-   "courriel": null
-  },
-  {
-   "departement": "69",
-   "nomDepartement": "Rhône",
-   "serviceId": "40ed0dcb-d584-49ea-be76-0c90b78ee9e1",
-   "service": "Service départemental des impôts fonciers (SDIF) Rhône - Lyon",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 20 61 88 00",
-   "adressePostale": "Nouvelle Cité Administrative, 118 rue Servient, 69003 Lyon",
-   "courriel": null
-  },
-  {
-   "departement": "74",
-   "nomDepartement": "Haute-Savoie",
-   "serviceId": "cdb6415e-db0a-4c1f-8b0b-00b861432b11",
-   "service": "Service départemental des impôts fonciers (SDIF) Haute-Savoie - Bonneville",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "cdif.annecy@dgfip.finances.gouv.fr",
-   "telephone": "04 50 97 19 01",
-   "adressePostale": "Centre des finances publiques, 45 rue Pierre-de-Coubertin, BP 131, 74136 Bonneville Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "75",
-   "nomDepartement": "Ile-de- France / Ile-de-France",
-   "serviceId": "3b5df727-06c1-4cd4-b165-73136b117562",
-   "service": "Service départemental des impôts fonciers (SDIF) Ile-de- France - Paris 2 (1er, 2e, 3e, 4e, 5e, 6e, 7e, 9e, 10e, 13e, 14e, 15e, 16e arrondissements)",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "01 53 27 45 69",
-   "adressePostale": "Centre des finances publiques, 6 rue Paganini, 75020 Paris",
-   "courriel": null
-  },
-  {
-   "departement": "75",
-   "nomDepartement": "Ile-de- France / Ile-de-France",
-   "serviceId": "eccc99a7-a7cd-41e4-ace6-92c070366b1f",
-   "service": "Service départemental des impôts fonciers (SDIF) Ile-de-France - Paris 1 (8e, 11e, 12e, 17e, 18e, 19e, 20e arrondissements)",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "01 53 27 45 77",
-   "adressePostale": "6 rue Paganini, 75020 Paris",
-   "courriel": null
-  },
-  {
-   "departement": "76",
-   "nomDepartement": "Seine-Maritime",
-   "serviceId": "685879b4-316b-4992-8518-fec2189f9ce1",
-   "service": "Service départemental des impôts fonciers (SDIF) Seine-Maritime - Rouen",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "02 32 18 93 02",
-   "adressePostale": "38 Cours Clémenceau, 76037 Rouen Cedex 1",
-   "courriel": null
-  },
-  {
-   "departement": "77",
-   "nomDepartement": "Seine-et-Marne",
-   "serviceId": "258ef3af-e8c6-404d-835b-1457e2129587",
-   "service": "Service départemental des Impôts Fonciers (SDIF) Seine-et-Marne - Meaux",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "01 64 35 21 23",
-   "adressePostale": "Centre des finances publiques, Service des impôts des particuliers, 21 place de l'Europe, 77337 Meaux Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "78",
-   "nomDepartement": "Yvelines",
-   "serviceId": "a03b60f7-4f7d-454f-be9b-3c3f5005265a",
-   "service": "Service départemental des impôts fonciers (SDIF) Yvelines - Rambouillet",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "01 34 94 16 00",
-   "adressePostale": "Centre des finances publiques, 2 rue Louis Pasteur, 78514 Rambouillet Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "79",
-   "nomDepartement": "Deux-Sèvres / Maine-et-Loire",
-   "serviceId": "446798e8-c629-4f3e-bca9-f0902bf398a0",
-   "service": "Service départemental des impôts fonciers (SDIF) Maine-et-Loire - Angers",
-   "categorie": "C",
-   "situation": "Rabattu sur une autre boite du département",
-   "rabattementActuel": "sdif79.bressuire@dgfip.finances.gouv.fr, sdif79.niort@dgfip.finances.gouv.fr",
-   "telephone": "02 41 74 53 40",
-   "adressePostale": "Bâtiment C, 15 bis rue Dupetit-Thouars, Cité administrative, 49047 Angers Cedex 01",
-   "courriel": null
-  },
-  {
-   "departement": "79",
-   "nomDepartement": "Deux-Sèvres / Maine-et-Loire",
-   "serviceId": "5f419d2c-6eaa-42f3-ace6-92f4ad15c716",
-   "service": "Service départemental des impôts fonciers (SDIF) Maine-et-Loire - Cholet",
-   "categorie": "C",
-   "situation": "Rabattu sur une autre boite du département",
-   "rabattementActuel": "sdif79.bressuire@dgfip.finances.gouv.fr, sdif79.niort@dgfip.finances.gouv.fr",
-   "telephone": "02 41 49 58 28",
-   "adressePostale": "Hôtel des finances publiques, 42 rue du Planty, 49321 Cholet Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "79",
-   "nomDepartement": "Deux-Sèvres / Maine-et-Loire",
-   "serviceId": "082f52b5-838e-46db-9ae8-5e9a5805acfc",
-   "service": "Service départemental des impôts fonciers (SDIF) Maine-et-Loire - Saumur",
-   "categorie": "C",
-   "situation": "Rabattu sur une autre boite du département",
-   "rabattementActuel": "sdif79.bressuire@dgfip.finances.gouv.fr, sdif79.niort@dgfip.finances.gouv.fr",
-   "telephone": "02 41 83 57 00",
-   "adressePostale": "8 rue Saint-Louis, 49417 Saumur Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "81",
-   "nomDepartement": "Tarn",
-   "serviceId": "6c95b6ec-3778-42a8-9183-2cb8338aae54",
-   "service": "Service départemental des impôts fonciers (SDIF) Tarn - Albi",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 63 48 89 89",
-   "adressePostale": "209 rue du Roc, 81000 Albi | Service des impôts foncier du Tarn, Antenne d'Albi, 209 rue du Roc, 81014 Albi cedex 9",
-   "courriel": null
-  },
-  {
-   "departement": "81",
-   "nomDepartement": "Tarn",
-   "serviceId": "9cfc4bf2-b504-42a8-8721-07cb976692ba",
-   "service": "Service départemental des impôts fonciers (SDIF) Tarn - Castres",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 63 62 52 00",
-   "adressePostale": "4 avenue Charles-de-Gaulle, 81100 Castres | Service des impôts foncier du Tarn à Castres, 4 avenue Charles-de-Gaulle, BP 90405, 81108 Castres Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "82",
-   "nomDepartement": "Tarn-et-Garonne",
-   "serviceId": "f861ecfa-b495-4c75-b2d1-34fb341c3cbb",
-   "service": "Service départemental des impôts fonciers (SDIF) Tarn-et-Garonne - Moissac",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 63 04 64 00",
-   "adressePostale": "12 boulevard Lakanal, 82200 Moissac | 12 boulevard Lakanal, CS 20304, 82208 Moissac Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "83",
-   "nomDepartement": "Var",
-   "serviceId": "59d76d3c-66af-4ad2-99f7-a52f18c7fa0d",
-   "service": "Service départemental des impôts fonciers (SDIF) Var - Draguignan (antenne)",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 94 60 49 33",
-   "adressePostale": "43 Chemin Sainte-Barbe, 83000 Draguignan | 43 Chemin Sainte-Barbe, CS 30407, 83008 Draguignan Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "83",
-   "nomDepartement": "Var",
-   "serviceId": "a75171b1-9515-4575-b2b9-f184ca366b14",
-   "service": "Service départemental des impôts fonciers (SDIF) Var - Toulon",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "04 94 03 95 00",
-   "adressePostale": "Cité administrative des Lices, 98 Rue Montebello, 83000 Toulon | Cité administrative des Lices, 98 Rue Montebello, CS 20127, 83071 Toulon Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "84",
-   "nomDepartement": "Vaucluse",
-   "serviceId": "1c0485af-929f-48b1-9df4-d72a8b6f23bd",
-   "service": "Service départemental des impôts fonciers (SDIF) Vaucluse - Orange",
-   "categorie": "B",
-   "situation": "Rabattu sur l'unique adresse du département",
-   "rabattementActuel": "sdif.vaucluse@dgfip.finances.gouv.fr",
-   "telephone": "",
-   "adressePostale": "132 allée d'Auvergne, Centre des Finances Publiques, BP 50200, 84873 Orange Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "86",
-   "nomDepartement": "Vienne",
-   "serviceId": "eb3fda57-13df-444b-b5b6-ca5326a36f99",
-   "service": "Service départemental des impôts fonciers (SDIF) Vienne - Poitiers",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 49 38 24 00",
-   "adressePostale": "Centre des finances publiques, 15 rue de Slovénie, 86000 Poitiers",
-   "courriel": null
-  },
-  {
-   "departement": "87",
-   "nomDepartement": "Haute-Vienne",
-   "serviceId": "00729758-81e0-4623-873b-ec7972627415",
-   "service": "Service départemental des impôts fonciers (SDIF) Haute-Vienne - Limoges",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 55 45 59 04",
-   "adressePostale": "Centre des finances publiques, 30 rue Cruveilhier, 87000 Limoges | Centre des finances publiques, 30 rue Cruveilhier, 87050 Limoges Cedex 2",
-   "courriel": null
-  },
-  {
-   "departement": "88",
-   "nomDepartement": "Vosges",
-   "serviceId": "ac0c74c8-e6a8-4055-bbfd-53fcd013961a",
-   "service": "Service départemental des impôts fonciers (SDIF) Vosges - Epinal",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "03 29 69 22 95",
-   "adressePostale": "1 rue du Docteur-Laflotte, BP 41009, 88060 Épinal Cedex 9",
-   "courriel": null
-  },
-  {
-   "departement": "89",
-   "nomDepartement": "Yonne",
-   "serviceId": "d944623e-b166-463d-9779-896de24e8286",
-   "service": "Service départemental des impôts fonciers (SDIF) Yonne - Auxerre",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "03 86 72 50 04",
-   "adressePostale": "8 rue des Moreaux, Centre des finances publiques d'Auxerre, BP 29, 89010 Auxerre Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "91",
-   "nomDepartement": "Essonne",
-   "serviceId": "63498e0b-b493-4f7e-88f3-383cf62ef9e5",
-   "service": "Service départemental des impôts fonciers (SDIF) Essonne - Corbeil-Essonnes",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "01 60 90 51 00",
-   "adressePostale": "Centre des finances publiques, 75-79 rue Feray, 91107 Corbeil-Essonnes Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "92",
-   "nomDepartement": "Hauts-de-Seine",
-   "serviceId": "006e20e8-eabb-4f38-b4c0-70f6c9b81626",
-   "service": "Service départemental des impôts fonciers (SDIF) Hauts-de-Seine - Nanterre",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "01 41 37 83 00",
-   "adressePostale": "7 boulevard des Bouvets, 92000 Nanterre | 7 boulevard des Bouvets, CS 80309, 92741 Nanterre Cedex",
-   "courriel": null
-  },
-  {
-   "departement": "972",
-   "nomDepartement": "Martinique",
-   "serviceId": "a0f09b68-a29f-41d4-a149-60cef04dcfab",
-   "service": "Service départemental des impôts fonciers (SDIF) Martinique - Fort-de-France",
-   "categorie": "A",
-   "situation": "Aucune adresse dans le département",
-   "rabattementActuel": null,
-   "telephone": "05 96 59 55 76",
-   "adressePostale": "Centre des finances publiques, Route de Cluny, BP 605, 97261 Fort-de-France Cedex",
-   "courriel": null
-  }
- ]
 }
