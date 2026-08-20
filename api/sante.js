@@ -103,7 +103,13 @@ export default async function handler(req, res) {
     execution: {
       region: process.env.VERCEL_REGION || null,
       environnement: process.env.VERCEL_ENV || null,
+      // Le commit designe le CODE : un Redeploy rejoue le meme, donc il ne dit
+      // jamais si un redeploiement a eu lieu. Une demi-heure a ete perdue
+      // la-dessus le 20/08 en cherchant si une variable modifiee avait ete prise.
       commit: (process.env.VERCEL_GIT_COMMIT_SHA || '').slice(0, 7) || null,
+      // Celui-ci change a CHAQUE deploiement, rejeu compris. C'est lui qu'il
+      // faut regarder apres avoir modifie une variable d'environnement.
+      deploiement: process.env.VERCEL_DEPLOYMENT_ID || null,
     },
     config,
     referentielCorrige: referentiel,
@@ -150,6 +156,9 @@ export default async function handler(req, res) {
     return res.status(503).json(rapport);
   }
 
+  // Chronometre a part : la duree de la tentative distingue les causes de panne
+  // mieux que le code d'erreur, souvent absent. Voir le catch en fin de fonction.
+  const tBase = Date.now();
   try {
     const sql = neon(process.env.DATABASE_URL);
 
@@ -183,8 +192,24 @@ export default async function handler(req, res) {
     rapport.ms = Date.now() - t0;
     return res.status(rapport.etat === 'operationnel' ? 200 : 503).json(rapport);
   } catch (e) {
-    // Le message d'erreur Postgres peut contenir l'hôte : on ne renvoie que le code.
-    rapport.base = `injoignable (${e.code || 'erreur'})`;
+    // Le message d'erreur Postgres peut contenir l'hôte : on ne renvoie que le
+    // code. Mais un code manque souvent, et « injoignable (erreur) » n'oriente
+    // vers rien. La DURÉE, elle, désigne la cause :
+    //
+    //   quelques ms, sans code   -> la chaîne est mal formée, le pilote refuse
+    //                               avant tout appel réseau. Le cas du 20/08 :
+    //                               le format .env de Neon collé au lieu de
+    //                               l'URL de connexion.
+    //   centaines de ms, 28P01   -> authentification refusée : mot de passe
+    //                               faux, ou variable modifiée sans redéploiement.
+    //   long, code réseau        -> hôte injoignable : région, pare-feu, veille.
+    //
+    // Un témoin doit dire ce qu'il constate, pas ce qu'il conclut.
+    const msBase = Date.now() - tBase;
+    rapport.base = e.code
+      ? `injoignable (${e.code}) après ${msBase} ms`
+      : `injoignable, sans code Postgres, après ${msBase} ms`
+        + (msBase < 50 ? ' — rejet avant tout appel réseau : la chaîne de connexion est probablement mal formée' : '');
     rapport.etat = 'en panne';
     rapport.ms = Date.now() - t0;
     console.error('[MATRICE] santé — base injoignable', e);
