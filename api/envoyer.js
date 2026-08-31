@@ -10,6 +10,15 @@
 // api/relance.js : un brouillon jamais expédié ne serait plus relancé, alors
 // le rappel du matin signale séparément les envois sans réponse au-delà de
 // 7 jours ouvrés.
+//
+// ROUTAGE DIVERGENT (31/08/2026)
+//
+// Une commune dont les cinq voisines n'ont pas convergé est adressée à
+// PLUSIEURS services : un brouillon distinct par service, et aucun ne mentionne
+// les autres — décision de JFD, assumée. Elle figure donc dans plusieurs
+// groupes et produit plusieurs Cerfa. Son `statut` reste l'agrégat : `envoyee`
+// dès qu'un courriel est parti, et la première réponse reçue clôt la demande,
+// quel que soit le service qui répond.
 
 import { neon } from '@neondatabase/serverless';
 import { protege, auteurDepuis } from '../lib/verrou.js';
@@ -17,6 +26,7 @@ import { remplirCerfa } from '../lib/cerfa.js';
 import { imagesScellees } from '../lib/sceau.js';
 import { deposerBrouillon } from '../lib/courriel.js';
 import { envelopper, e as ech, p, vide } from '../lib/signature-mail.js';
+import { grouperEnvois, compterFormulaires } from '../lib/envois.js';
 
 // L'identité du demandeur, c'est l'office. Elle ne vient pas de l'appelant :
 // un écran qui choisit qui demande pourrait demander au nom de n'importe qui.
@@ -63,7 +73,8 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
   try {
     const pretes = await sql`
       SELECT id, code_insee, nom_commune, departement, nb_lots,
-             service_nom, destinataire, societe, siren
+             service_nom, destinataire, telephone_relance, services_alternatifs,
+             societe, siren
         FROM matrice_demande
        WHERE dossier = ${dossier} AND statut = 'a_envoyer'
        ORDER BY nom_commune
@@ -98,15 +109,20 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
     }
     const images = sceau.images;
     const maintenant = new Date();
-    const groupes = new Map();
-    for (const l of pretes) {
-      if (!groupes.has(l.destinataire)) groupes.set(l.destinataire, { service: l.service_nom, lignes: [] });
-      groupes.get(l.destinataire).lignes.push(l);
-    }
+
+    // Groupement partagé avec routage.js et vue-dossier.js : une commune peut
+    // figurer dans plusieurs groupes si son routage a divergé.
+    const groupes = grouperEnvois(pretes);
 
     const rapport = [];
+    // Une demande présente dans deux groupes ne doit passer en `envoyee` et
+    // journaliser son changement de statut qu'UNE fois. Le rattachement à
+    // chaque envoi, lui, est écrit à chaque tour : c'est ce qui trace les deux
+    // courriels.
+    const statutEcrit = new Set();
 
-    for (const [destinataire, g] of groupes) {
+    for (const g of groupes) {
+      const destinataire = g.destinataire;
       // Un formulaire par commune, un courriel par service.
       //
       // Aucun mandat n'est joint, et c'est conforme : le BOFiP, § 120 de
@@ -119,7 +135,7 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
       // que l'administration n'exige pas ajouterait une pièce à réunir, un
       // refus à contourner, et une phrase inexacte dans le courriel.
       const pieces = [];
-      for (const l of g.lignes) {
+      for (const l of g.communes) {
         const pdf = await remplirCerfa({
           demandeur: OFFICE,
           mandant: l.societe,
@@ -136,12 +152,17 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
         });
       }
 
-      const objet = `Demandes d'extrait de matrice cadastrale — ${g.lignes.length} commune${g.lignes.length > 1 ? 's' : ''} — ${dossier}`;
-      const corps = redigerTexte(g);
-      const { html: corpsHtml, images: imagesEnLigne } = envelopper(redigerHtml(g));
+      const n = g.communes.length;
+      const objet = `Demandes d'extrait de matrice cadastrale — ${n} commune${n > 1 ? 's' : ''} — ${dossier}`;
+      const sujet = { service: g.serviceNom, lignes: g.communes };
+      const corps = redigerTexte(sujet);
+      const { html: corpsHtml, images: imagesEnLigne } = envelopper(redigerHtml(sujet));
 
       if (simulation) {
-        rapport.push({ destinataire, service: g.service, formulaires: g.lignes.length, voie: 'simulation' });
+        rapport.push({
+          destinataire, service: g.serviceNom, formulaires: n,
+          issuDeDivergence: g.issuDeDivergence, voie: 'simulation',
+        });
         continue;
       }
 
@@ -151,28 +172,35 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
 
       const [ligneEnvoi] = await sql`
         INSERT INTO matrice_envoi (dossier, service_nom, destinataire, nb_formulaires, mandat_joint, envoye_par, message_id)
-        VALUES (${dossier}, ${g.service || 'service'}, ${destinataire}, ${g.lignes.length}, false, ${auteur}, ${envoi.id || null})
+        VALUES (${dossier}, ${g.serviceNom || 'service'}, ${destinataire}, ${n}, false, ${auteur}, ${envoi.id || null})
         RETURNING id
       `;
 
-      for (const l of g.lignes) {
+      for (const l of g.communes) {
         await sql`INSERT INTO matrice_envoi_demande (envoi_id, demande_id) VALUES (${ligneEnvoi.id}, ${l.id})`;
-        await sql`
-          UPDATE matrice_demande SET statut = 'envoyee', prochaine_relance = NULL WHERE id = ${l.id}
-        `;
+
+        if (!statutEcrit.has(l.id)) {
+          await sql`
+            UPDATE matrice_demande SET statut = 'envoyee', prochaine_relance = NULL WHERE id = ${l.id}
+          `;
+          statutEcrit.add(l.id);
+        }
+
         await sql`
           INSERT INTO matrice_journal (demande_id, dossier, evenement, detail, auteur)
           VALUES (${l.id}, ${dossier}, 'envoi',
                   ${JSON.stringify({
-                    destinataire, service: g.service, voie: envoi.voie,
+                    destinataire, service: g.serviceNom, voie: envoi.voie,
                     envoiId: ligneEnvoi.id,
                     signe: sceau.etat === 'signe',
+                    ...(g.issuDeDivergence ? { routageIncertain: true } : {}),
                   })}::jsonb, ${auteur})
         `;
       }
 
       rapport.push({
-        destinataire, service: g.service, formulaires: g.lignes.length,
+        destinataire, service: g.serviceNom, formulaires: n,
+        issuDeDivergence: g.issuDeDivergence,
         voie: envoi.voie, lien: envoi.webLink || null,
         motifRepli: envoi.motif || null,
         eml: envoi.voie === 'eml' ? envoi.eml : undefined,
@@ -183,7 +211,10 @@ export default protege(async (req, res, utilisateur, jetonDelegue) => {
       dossier,
       simulation: Boolean(simulation),
       brouillons: rapport.length,
-      formulaires: pretes.length,
+      // Nombre de Cerfa produits : dépasse le nombre de communes quand un
+      // routage a divergé.
+      formulaires: compterFormulaires(pretes),
+      communes: pretes.length,
       signature: {
         signe: 'apposée — formulaires signés',
         sans_phrase: 'ABSENTE — formulaires non signés (aucune phrase de signature fournie)',
@@ -229,6 +260,10 @@ const assainir = (s) => String(s)
 // notaires de le produire pour TOUTES leurs demandes d'extraits de matrice
 // (BOI-CAD-DIFF-20-20-10-10, § 120). Vérifié le 17 août 2026 — l'exigence
 // figurait dans les premières versions de MATRICE et n'avait pas lieu d'être.
+//
+// Le texte ne dit RIEN d'un éventuel routage incertain : quand deux services
+// sont saisis, chacun reçoit un message identique, et aucun ne sait que l'autre
+// l'est. Décision de JFD du 29/08/2026.
 
 function phrases(g) {
   const l0 = g.lignes[0];
