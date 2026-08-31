@@ -3,7 +3,6 @@
 // Rend tout ce que l'écran affiche, déjà regroupé. La mise en forme et les
 // contrôles vivent dans lib/vue-dossier.js, testables sans base : ici on ne
 // fait que lire et déléguer.
-
 import { neon } from '@neondatabase/serverless';
 import { protege } from '../lib/verrou.js';
 import { vueDossier } from '../lib/vue-dossier.js';
@@ -11,7 +10,6 @@ import { sceauConfigure } from '../lib/sceau.js';
 
 export default protege(async (req, res) => {
   if (req.method !== 'GET') return res.status(405).json({ erreur: 'GET attendu' });
-
   const dossier = req.query?.dossier;
   const sql = neon(process.env.DATABASE_URL);
 
@@ -33,15 +31,18 @@ export default protege(async (req, res) => {
   if (!dossier) return res.status(400).json({ erreur: 'paramètre dossier obligatoire' });
 
   try {
+    // `services_alternatifs` est indispensable ici : sans lui, vue-dossier.js ne
+    // peut pas voir qu'une commune vise plusieurs services, et l'écran
+    // afficherait un seul courriel là où deux partent.
     const lignes = await sql`
       SELECT id, code_insee, nom_commune, departement, nb_lots, statut,
              motif_attente, service_nom, destinataire, telephone_relance,
+             services_alternatifs,
              prochaine_relance, nb_relances, societe, siren
         FROM matrice_demande
        WHERE dossier = ${dossier}
        ORDER BY statut, nb_lots DESC, nom_commune
     `;
-
     if (lignes.length === 0) return res.status(404).json({ erreur: `dossier ${dossier} inconnu` });
 
     // L'écran doit savoir s'il faut réclamer la phrase de signature. Deux
