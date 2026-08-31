@@ -209,7 +209,18 @@ export default protege(async (req, res, utilisateur) => {
       if (l.statut !== 'en_attente') continue;
 
       const d = deduireParVoisinage(l.code_insee, CENTRES, CORR);
-      if (d.statut === 'impossible') continue;
+
+      // Déduction impossible : la commune reste en attente, mais on conserve la
+      // raison de cet échec à côté du motif d'origine. Les deux disent des
+      // choses différentes — le premier oriente la question à poser au
+      // téléphone (« quelles communes relèvent de votre guichet »), le second
+      // explique pourquoi le rattrapage automatique n'a rien pu faire (« la
+      // seule adresse connue est sous réserve non levée »). Perdre le second
+      // faisait lire au collaborateur un motif moins actionnable que la réalité.
+      if (d.statut === 'impossible') {
+        if (d.motif) l.motif = `${l.motif || ''}\nVoisinage : ${d.motif}`.trim();
+        continue;
+      }
 
       deductions.set(l.code_insee, d);
       l.statut = 'a_envoyer';
