@@ -45,17 +45,25 @@ h3.sec{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--
 .svc header h4{margin:0 0 3px;font-size:15px;font-weight:600}
 .svc header .mail{font-size:13px;color:#9fd8de;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
 .svc header .mail.none{color:#ffbe77;font-style:italic;font-family:inherit}
+.svc header .pills{display:flex;flex-direction:column;gap:5px;align-items:flex-end}
 .pill{font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;padding:4px 9px;border-radius:99px;white-space:nowrap}
 .p-ok{background:rgba(51,131,139,.22);color:#7ad3db;border:1px solid rgba(51,131,139,.55)}
 .p-wait{background:rgba(255,152,45,.18);color:#ffbe77;border:1px solid rgba(255,152,45,.6)}
+/* Adresse déduite du voisinage : ni sûre comme une adresse confirmée, ni
+   bloquante comme une attente. Sa couleur doit être la sienne. */
+.p-deduit{background:rgba(227,204,122,.16);color:var(--ocre);border:1px solid rgba(227,204,122,.5)}
 .svc .body{padding:12px 16px}
 .svc .count{font-size:12.5px;color:var(--gris);margin-bottom:9px}
 .coms{display:flex;flex-wrap:wrap;gap:6px}
 .com{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:4px;
   padding:4px 9px;font-size:12.5px;display:flex;gap:7px;align-items:baseline}
+.com.deduite{border-color:rgba(227,204,122,.45);background:rgba(227,204,122,.07)}
 .com b{font-weight:600} .com i{font-style:normal;color:var(--gris);font-size:11px;font-variant-numeric:tabular-nums}
+.com em{font-style:normal;color:var(--ocre);font-size:10px;text-transform:uppercase;letter-spacing:.06em}
+/* pre-line : depuis le 31/08/2026 le motif peut porter deux phrases séparées
+   d'un retour à la ligne — celui du routage, puis celui de la déduction. */
 .why{margin-top:11px;padding:11px 13px;background:rgba(255,152,45,.09);border-left:3px solid var(--orange);
-  border-radius:0 4px 4px 0;font-size:13px}
+  border-radius:0 4px 4px 0;font-size:13px;white-space:pre-line}
 .why b{color:#ffbe77}
 .relance{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:11px;font-size:12.5px;color:var(--gris)}
 .tag{background:rgba(255,152,45,.14);border:1px solid rgba(255,152,45,.4);color:#ffbe77;
@@ -71,7 +79,7 @@ h3.sec{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--
 .ic.echec{background:rgba(160,16,64,.25);color:#ff8fae;border:1px solid rgba(160,16,64,.7)}
 .ic.avertissement{background:rgba(255,152,45,.2);color:#ffbe77;border:1px solid rgba(255,152,45,.6)}
 .chk .t{font-size:13.5px}
-.chk .t small{display:block;color:var(--gris);font-size:12px;margin-top:2px}
+.chk .t small{display:block;color:var(--gris);font-size:12px;margin-top:2px;white-space:pre-line}
 
 .foot{position:sticky;bottom:0;margin-top:24px;background:rgba(10,23,38,.96);
   border-top:1px solid var(--ligne);padding:15px 0 6px;backdrop-filter:blur(6px)}
@@ -94,6 +102,16 @@ textarea.coller{width:100%;min-height:190px;padding:12px 14px;border-radius:6px;
   border-radius:0 5px 5px 0;padding:12px 14px;margin-bottom:12px;font-size:13px}
 .pb h4{margin:0 0 7px;font-size:13px;color:#ff8fae}
 .pb ul{margin:0;padding-left:18px} .pb li{margin:3px 0}
+/* Une déduction n'est pas un problème : c'est une information. Même gabarit
+   que .pb, mais en ocre — le carmin annoncerait à tort un blocage. */
+.pb.dedu{background:rgba(227,204,122,.08);border-color:rgba(227,204,122,.4);border-left-color:var(--ocre)}
+.pb.dedu h4{color:var(--ocre)}
+.dedu-ligne{padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.dedu-ligne:last-child{border-bottom:0}
+.dedu-ligne .quoi{font-size:13.5px}
+.dedu-ligne .quoi b{font-weight:600}
+.dedu-ligne .via{display:block;color:var(--gris);font-size:11.5px;margin-top:3px}
+.dedu-ligne .via code{background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px;font-size:11px}
 .prec{display:grid;grid-template-columns:minmax(140px,1fr) 2fr;gap:10px;align-items:start;
   padding:10px 0;border-bottom:1px solid rgba(255,255,255,.07)}
 .prec:last-of-type{border-bottom:0}
@@ -298,10 +316,17 @@ function dessiner() {
   const v = vue, r = v.resume;
   const bloque = !v.envoiPossible;
 
+  // ATTENTION AUX DEUX COMPTES, depuis le 31/08/2026 : `formulaires` compte les
+  // Cerfa produits, `communesPretes` compte les communes. Une commune au routage
+  // divergent produit DEUX Cerfa — la bannière doit parler de communes, sinon
+  // elle annonce deux communes là où il n'y en a qu'une.
+  const pretes = r.communesPretes ?? r.formulaires;
+
   const banniere = bloque
     ? `<div class="banner stop"><h2>L’envoi est bloqué</h2><p>${e(v.bloquants.join(' · '))}. Rien ne partira tant que ce point n’est pas levé.</p></div>`
-    : `<div class="banner go"><h2>${r.formulaires} commune${r.formulaires > 1 ? 's' : ''} sur ${r.communes} ${r.formulaires > 1 ? 'partent' : 'part'} maintenant</h2>
-       <p>${r.enAttente ? `${r.enAttente} commune${r.enAttente > 1 ? 's' : ''} sans destinataire fiable : mise${r.enAttente > 1 ? 's' : ''} en file et relancée${r.enAttente > 1 ? 's' : ''} tous les 7 jours ouvrés, sans bloquer le reste.` : 'Aucune commune en attente.'}</p></div>`;
+    : `<div class="banner go"><h2>${pretes} commune${pretes > 1 ? 's' : ''} sur ${r.communes} ${pretes > 1 ? 'partent' : 'part'} maintenant</h2>
+       <p>${r.enAttente ? `${r.enAttente} commune${r.enAttente > 1 ? 's' : ''} sans destinataire fiable : mise${r.enAttente > 1 ? 's' : ''} en file et relancée${r.enAttente > 1 ? 's' : ''} tous les 7 jours ouvrés, sans bloquer le reste.` : 'Aucune commune en attente.'}${
+         r.divergentes ? ` ${r.divergentes} commune${r.divergentes > 1 ? 's' : ''} au routage incertain : une demande distincte part vers chaque service possible.` : ''}</p></div>`;
 
   app.innerHTML = `
   <div class="bar">
@@ -316,7 +341,8 @@ function dessiner() {
   <div class="kpis">
     <div class="kpi"><div class="n">${r.lots}</div><div class="l">lots du portefeuille</div></div>
     <div class="kpi"><div class="n">${r.communes}</div><div class="l">communes</div></div>
-    <div class="kpi ok"><div class="n">${r.courriels}</div><div class="l">courriel${r.courriels > 1 ? 's' : ''} · ${r.formulaires} formulaires</div></div>
+    <div class="kpi ok"><div class="n">${r.courriels}</div><div class="l">courriel${r.courriels > 1 ? 's' : ''} · ${r.formulaires} formulaires${
+      r.formulaires !== pretes ? ` pour ${pretes} communes` : ''}</div></div>
     <div class="kpi wait"><div class="n">${r.enAttente}</div><div class="l">en attente</div></div>
   </div>
 
@@ -370,17 +396,24 @@ function dessiner() {
   app.querySelectorAll('[data-abandonner]').forEach((b) => { b.onclick = () => abandonner(b.dataset.abandonner, b.dataset.commune); });
 }
 
-const chip = (c) => `<span class="com"><b>${e(c.commune)}</b><i>${e(c.code)} · ${c.lots}</i></span>`;
+// Une commune adressée à plusieurs services est marquée : deux courriels pour
+// une commune ressemble sinon à un doublon, et le collaborateur cherche l'erreur.
+const chip = (c) => `<span class="com${c.divergente ? ' deduite' : ''}"><b>${e(c.commune)}</b><i>${e(c.code)} · ${c.lots}</i>${
+  c.divergente ? `<em title="routage incertain : ${e((c.services || []).map((s) => s.destinataire).join(', '))}">${c.services ? c.services.length : 2} services</em>` : ''}</span>`;
 
 function blocEnvoi(env) {
   return `<div class="svc">
     <header><div class="id"><h4>${e(env.service || 'Service')}</h4>
       <div class="mail">${e(env.destinataire)}</div></div>
-      <span class="pill p-ok">prêt</span></header>
+      <div class="pills"><span class="pill p-ok">prêt</span>${
+        env.issuDeDivergence ? '<span class="pill p-deduit">routage déduit</span>' : ''}</div></header>
     <div class="body">
       <div class="count"><b>1 courriel</b> · ${env.communes.length} formulaires 6815-EM-SD ·
         ${env.communes.reduce((n, c) => n + (c.lots || 0), 0)} lots</div>
       <div class="coms">${env.communes.map(chip).join('')}</div>
+      ${env.issuDeDivergence ? `<div class="why"><b>Pourquoi ce service.</b> Au moins une commune de cet envoi
+        y est adressée en second choix : le voisinage n'a pas convergé, et une demande distincte part vers
+        chaque service possible. Aucun des services saisis ne sait que les autres le sont.</div>` : ''}
     </div></div>`;
 }
 
@@ -430,11 +463,17 @@ async function lancer(simulation) {
     });
     if (champPasse) champPasse.value = '';
 
-    const detail = r.envois.map((e) => `${e.formulaires} formulaires → ${e.destinataire}`).join('\n');
+    const detail = r.envois.map((x) =>
+      `${x.formulaires} formulaires → ${x.destinataire}${x.issuDeDivergence ? ' (routage déduit)' : ''}`).join('\n');
+    // Le nombre de communes et celui de formulaires peuvent différer : le dire,
+    // sinon un écart ressemble à un doublon.
+    const compte = (r.communes && r.formulaires !== r.communes)
+      ? `${r.formulaires} formulaires pour ${r.communes} communes`
+      : `${r.formulaires} formulaires`;
 
     if (simulation) {
       alert(`Simulation — rien n'a été écrit ni envoyé.\n\n`
-        + `${r.brouillons} courriel(s), ${r.formulaires} formulaires.\n\n${detail}\n\n`
+        + `${r.brouillons} courriel(s), ${compte}.\n\n${detail}\n\n`
         + `Signature : ${r.signature}`);
       return;
     }
@@ -442,12 +481,12 @@ async function lancer(simulation) {
     // Le serveur rend un .eml quand Graph n'a pas pu être joint. Le MOTIF est la
     // seule chose qui permette de comprendre pourquoi — l'afficher a évité
     // plusieurs allers-retours de diagnostic à l'aveugle.
-    const replis = r.envois.filter((e) => e.voie === 'eml' && e.eml);
-    for (const e of replis) {
-      telechargerEml(`MATRICE_${dossier}_${e.destinataire.split('@')[0]}.eml`, e.eml);
+    const replis = r.envois.filter((x) => x.voie === 'eml' && x.eml);
+    for (const x of replis) {
+      telechargerEml(`MATRICE_${dossier}_${x.destinataire.split('@')[0]}.eml`, x.eml);
     }
 
-    const motifs = [...new Set(r.envois.map((e) => e.motifRepli).filter(Boolean))];
+    const motifs = [...new Set(r.envois.map((x) => x.motifRepli).filter(Boolean))];
     const consentementManquant = motifs.some((m) => m.includes('AADSTS65001'));
 
     // Le repli .eml n'est pas une panne : il faut le dire, sinon chaque envoi
@@ -463,7 +502,7 @@ async function lancer(simulation) {
         : `\n${replis.length} fichier(s) .eml téléchargés : ouvrez-les dans Outlook, relisez, envoyez.`
           + `\n\nMotif du repli :\n${motifs.join('\n\n')}`;
 
-    alert(`${r.brouillons} brouillon(s) déposé(s), ${r.formulaires} formulaires.\n\n${detail}\n\n`
+    alert(`${r.brouillons} brouillon(s) déposé(s), ${compte}.\n\n${detail}\n\n`
       + `Signature : ${r.signature}\n${explication}`);
 
     await charger();
@@ -583,6 +622,11 @@ async function analyserPortefeuille(ecrire) {
 function vueImport(r) {
   const res = r.resume || {};
   const bloque = (r.nonResolues || []).length > 0;
+  // `communesPretes` est le compte des communes ; `formulaires` celui des Cerfa.
+  // `res.pretes` n'a jamais existé : le repli masquait l'erreur tant que les
+  // deux comptes coïncidaient, ce qui n'est plus le cas depuis le 31/08/2026.
+  const pretes = res.communesPretes ?? res.formulaires;
+  const deduites = r.deduites || [];
 
   const pbs = [];
   if ((r.nonResolues || []).length) {
@@ -617,22 +661,42 @@ function vueImport(r) {
       + '</ul></div>');
   }
 
+  // Les communes que le référentiel ne connaît pas et que le voisinage a
+  // rattrapées. Elles PARTENT, mais leur adresse est déduite, pas établie :
+  // c'est la seule occasion de le dire avant l'écriture en base.
+  const blocDeduites = deduites.length ? `
+    <div class="pb dedu"><h4>${deduites.length} adresse(s) déduite(s) du voisinage</h4>
+    <p style="margin:0 0 6px;color:var(--gris);font-size:12.5px">Ces communes sont absentes du référentiel
+    de compétence. Le service a été déduit des cinq communes référencées les plus proches, dans le même
+    département. Ce n'est pas une adresse confirmée : elle ne le sera que par la réponse du service.</p>`
+    + deduites.map((d) => `<div class="dedu-ligne"><div class="quoi">
+        <b>${e(d.code)}</b> → ${d.retenu ? `<code>${e(d.retenu)}</code>` : '—'}
+        ${d.statut === 'divergent' ? ' <span class="pill p-deduit" style="margin-left:6px">divergent</span>' : ''}
+        <span class="via">d'après ${(d.voisines || []).map((v) =>
+          `${e(v.code)} (${v.km} km${v.service ? '' : ', sans voix'})`).join(', ') || '—'}</span>
+      </div></div>`).join('')
+    + '</div>' : '';
+
   return `
   <h3 class="sec">Ce que MATRICE a compris</h3>
   <div class="kpis">
     <div class="kpi"><div class="n">${res.lots ?? '—'}</div><div class="l">lots</div></div>
     <div class="kpi"><div class="n">${res.communes ?? '—'}</div><div class="l">communes</div></div>
     <div class="kpi ok"><div class="n">${res.courriels ?? (r.envois || []).length}</div>
-      <div class="l">courriel${((r.envois || []).length) > 1 ? 's' : ''} · ${res.pretes ?? res.formulaires ?? '—'} formulaires</div></div>
+      <div class="l">courriel${((r.envois || []).length) > 1 ? 's' : ''} · ${res.formulaires ?? '—'} formulaires${
+        (res.formulaires != null && pretes != null && res.formulaires !== pretes) ? ` pour ${pretes} communes` : ''}</div></div>
     <div class="kpi wait"><div class="n">${(r.enAttente || []).length}</div><div class="l">en attente</div></div>
   </div>
   ${pbs.join('')}
+  ${blocDeduites}
   ${(r.envois || []).map((s) => `<div class="svc"><header><div class="id">
       <h4>${e(s.serviceNom || s.service || 'Service')}</h4>
       <div class="mail">${e(s.destinataire)}</div></div>
-      <span class="pill p-ok">${(s.communes || []).length} formulaires</span></header>
+      <div class="pills"><span class="pill p-ok">${(s.communes || []).length} formulaires</span>${
+        s.issuDeDivergence ? '<span class="pill p-deduit">routage déduit</span>' : ''}</div></header>
       <div class="body"><div class="coms">${(s.communes || []).map((c) =>
-        `<span class="com"><b>${e(c.nom_commune)}</b><i>${e(c.code_insee)} · ${c.nb_lots}</i></span>`).join('')}</div></div></div>`).join('')}
+        `<span class="com${c.etatAdresse === 'deduite' ? ' deduite' : ''}"><b>${e(c.nom_commune)}</b><i>${e(c.code_insee)} · ${c.nb_lots}</i>${
+          c.etatAdresse === 'deduite' ? '<em>déduite</em>' : ''}</span>`).join('')}</div></div></div>`).join('')}
   ${(r.enAttente || []).length ? `<h3 class="sec">Ce qui entrera en file d'attente</h3>`
     + r.enAttente.map((l) => `<div class="svc wait"><header><div class="id">
         <h4>${e(l.nom_commune)} — ${e(l.departement || '')}</h4>
