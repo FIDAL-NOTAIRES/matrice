@@ -109,7 +109,17 @@ function regrouper(resultat) {
   };
 }
 
-export default protege(async (req, res, utilisateur) => {
+/**
+ * La logique d'import, NUE — sans verrou.
+ *
+ * Elle est exportée depuis le 09/09/2026 pour que la porte machine
+ * (api/import-marteau.js, raccord MARTEAU → MATRICE) la réutilise au lieu de la
+ * recopier : une règle écrite en deux endroits dérive. Chaque porte pose SON
+ * verrou et appelle ceci ; c'est le verrou qui change, jamais le routage.
+ *
+ * Ne pas l'exposer directement comme handler : sans enveloppe, elle est ouverte.
+ */
+export const executerImport = async (req, res, utilisateur) => {
   if (req.method !== 'POST') return res.status(405).json({ erreur: 'POST attendu' });
 
   const { dossier, societe, siren, communes, texte, simulation, precisions } = req.body || {};
@@ -350,4 +360,7 @@ export default protege(async (req, res, utilisateur) => {
     console.error('[MATRICE] import', e);
     return res.status(500).json({ erreur: e.message });
   }
-});
+};
+
+// La porte humaine : Entra en production, mot de passe partagé en recette.
+export default protege(executerImport);

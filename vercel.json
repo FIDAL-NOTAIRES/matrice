@@ -10,6 +10,9 @@
     "api/importer.js": {
       "maxDuration": 60
     },
+    "api/import-marteau.js": {
+      "maxDuration": 60
+    },
     "api/sante.js": {
       "maxDuration": 15
     },
