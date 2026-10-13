@@ -12,6 +12,12 @@
 import { neon } from '@neondatabase/serverless';
 import { prochaineRelance, DELAI_RELANCE_JOURS_OUVRES } from '../lib/jours-ouvres.js';
 import { deposerBrouillon } from '../lib/courriel.js';
+import { etatLigne, aDisqualifier, DELAI_DISQUALIFICATION_JOURS } from '../lib/suivi.js';
+
+// Le rappel des services à relancer part les MARDIS et JEUDIS (rythme commun
+// avec MARTEAU) ; la fermeture des lignes à soixante jours tourne chaque matin.
+const JOURS_RAPPEL = [2, 4];
+const ADRESSE_MATRICE = process.env.MATRICE_URL || 'https://matrice-black.vercel.app';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 
@@ -28,6 +34,13 @@ export default async function handler(req, res) {
   const simulation = req.query?.simulation === '1';
 
   try {
+    // Suivi des demandes PARTIES (13/10/2026) — indépendant des communes en
+    // attente : il tourne même quand la file d'attente est vide. Une panne
+    // ici ne doit pas empêcher le rappel de la file : on la rend, on continue.
+    let suivi;
+    try { suivi = await suiviDesEnvois(sql, aujourdhui, simulation); }
+    catch (e) { console.error('[MATRICE] suivi des envois', e); suivi = { erreur: e.message }; }
+
     const dues = await sql`
       SELECT id, dossier, societe, siren, code_insee, nom_commune, departement,
              nb_lots, motif_attente, service_nom, telephone_relance,
@@ -39,7 +52,7 @@ export default async function handler(req, res) {
     `;
 
     if (dues.length === 0) {
-      return res.status(200).json({ statut: 'rien à relancer', le: iso(aujourdhui) });
+      return res.status(200).json({ statut: 'rien à relancer', le: iso(aujourdhui), suivi });
     }
 
     // Une relance par dossier, pas une par commune : sept courriels pour sept
@@ -93,6 +106,7 @@ export default async function handler(req, res) {
       le: iso(aujourdhui),
       delai: `${DELAI_RELANCE_JOURS_OUVRES} jours ouvrés`,
       dossiers: compte,
+      suivi,
     });
   } catch (e) {
     // Un échec de relance est silencieux par nature : personne ne remarque
@@ -100,6 +114,96 @@ export default async function handler(req, res) {
     console.error('[MATRICE] échec de la relance', e);
     return res.status(500).json({ erreur: 'échec de la relance', message: e.message });
   }
+}
+
+/**
+ * Suivi des demandes parties : (1) chaque matin, ferme les lignes suspendues
+ * depuis soixante jours et disqualifie leur guichet pour la commune ; (2) les
+ * mardis et jeudis, rappelle à l'office les services à relancer, dossier par
+ * dossier, avec le lien vers l'écran où se trouvent les boutons « Extrait
+ * reçu » et « Relancer le service ». Rien ne part vers l'administration.
+ */
+async function suiviDesEnvois(sql, aujourdhui, simulation) {
+  const lignes = await sql`
+    SELECT ed.envoi_id, ed.demande_id, ed.recu_le, ed.ferme_le, ed.nb_relances_service,
+           ed.derniere_relance_service, ed.appels,
+           e.envoye_le, e.service_nom, e.destinataire, e.dossier,
+           d.nom_commune, d.code_insee, d.societe,
+           EXISTS (SELECT 1 FROM matrice_envoi_demande y
+                    WHERE y.demande_id = d.id AND y.envoi_id <> e.id AND y.recu_le IS NOT NULL) AS autre_recue
+      FROM matrice_envoi_demande ed
+      JOIN matrice_envoi e ON e.id = ed.envoi_id
+      JOIN matrice_demande d ON d.id = ed.demande_id
+     WHERE ed.recu_le IS NULL AND ed.ferme_le IS NULL AND d.statut <> 'abandonnee'
+     ORDER BY e.dossier, e.id, d.nom_commune
+  `;
+
+  // (1) disqualification à soixante jours — définitive, commune par commune.
+  const fermees = [];
+  for (const l of lignes.filter((x) => aDisqualifier(x, aujourdhui))) {
+    fermees.push({ dossier: l.dossier, commune: l.nom_commune, guichet: l.destinataire });
+    if (simulation) continue;
+    const motif = `aucune réponse ${DELAI_DISQUALIFICATION_JOURS} jours après l'envoi, un autre guichet ayant délivré l'extrait`;
+    await sql`
+      UPDATE matrice_envoi_demande SET ferme_le = now(), motif_fermeture = ${motif}
+       WHERE envoi_id = ${l.envoi_id} AND demande_id = ${l.demande_id}
+    `;
+    const [a] = await sql`SELECT disqualifies FROM matrice_routage_appris WHERE code_insee = ${l.code_insee}`;
+    if (a && !(a.disqualifies || []).some((x) => x.destinataire === l.destinataire)) {
+      const liste = [...(a.disqualifies || []), { service_nom: l.service_nom, destinataire: l.destinataire, le: new Date().toISOString(), motif }];
+      await sql`UPDATE matrice_routage_appris SET disqualifies = ${JSON.stringify(liste)}::jsonb WHERE code_insee = ${l.code_insee}`;
+    }
+    await sql`
+      INSERT INTO matrice_journal (demande_id, dossier, evenement, detail, auteur)
+      VALUES (${l.demande_id}, ${l.dossier}, 'disqualification',
+              ${JSON.stringify({ envoi: l.envoi_id, destinataire: l.destinataire, service: l.service_nom, motif })}::jsonb, 'MATRICE')
+    `;
+  }
+
+  // (2) rappel des services à relancer, les mardis et jeudis seulement.
+  // jour de la semaine à Paris (0 = dimanche, 2 = mardi, 4 = jeudi)
+  const jour = new Date(aujourdhui.toLocaleString('en-US', { timeZone: 'Europe/Paris' })).getDay();
+  const aRelancer = lignes.map((l) => ({ ...l, ...etatLigne(l, aujourdhui) })).filter((l) => l.etat === 'a_relancer');
+  let rappels = 0;
+  if (JOURS_RAPPEL.includes(jour) && aRelancer.length) {
+    const parDossier = new Map();
+    for (const l of aRelancer) {
+      if (!parDossier.has(l.dossier)) parDossier.set(l.dossier, new Map());
+      const env = parDossier.get(l.dossier);
+      if (!env.has(l.envoi_id)) env.set(l.envoi_id, []);
+      env.get(l.envoi_id).push(l);
+    }
+    for (const [dossier, envois] of parDossier) {
+      const blocs = [...envois.values()].map((ls) => {
+        const t = ls[0], rang = Math.max(...ls.map((x) => x.rang));
+        return [
+          `• ${t.service_nom || t.destinataire} — ${t.destinataire}`,
+          `    parti le ${new Date(t.envoye_le).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })}, ${rang > 1 ? `${rang}ᵉ relance` : 'première relance'} due`,
+          `    ${ls.map((x) => x.nom_commune).join(', ')}`,
+          ls.some((x) => x.appelRequis) ? `    APPELER LE SERVICE D'ABORD : l'appel se consigne au moment de préparer la relance.` : null,
+        ].filter(Boolean).join('\n');
+      });
+      const lien = `${ADRESSE_MATRICE}/?dossier=${encodeURIComponent(dossier)}`;
+      const corps = [
+        `Dossier ${dossier} — ${[...envois.values()][0][0].societe}`, '',
+        `Des demandes d'extrait de matrice sont parties sans réponse depuis plus de quinze jours :`, '',
+        blocs.join('\n\n'), '',
+        `Extrait arrivé ? Ouvrez le dossier et cliquez « Extrait reçu » sur la commune.`,
+        `Toujours rien ? Ouvrez le dossier et cliquez « Relancer le service » : MATRICE prépare le brouillon, vous l'envoyez.`, '',
+        lien, '',
+        `— MATRICE, ${aujourdhui.toLocaleDateString('fr-FR', { timeZone: 'UTC' })}`,
+      ].join('\n');
+      if (!simulation) {
+        await deposerBrouillon({
+          objet: `MATRICE — services à relancer · dossier ${dossier}`,
+          corps,
+          destinataires: (process.env.MATRICE_RELANCE_A || '').split(',').filter(Boolean),
+        });
+      }
+      rappels++;
+    }
+  }
+  return { fermees, aRelancer: aRelancer.length, rappels, jourDeRappel: JOURS_RAPPEL.includes(jour) };
 }
 
 /** Le corps du rappel. Court, et il dit quoi faire. */

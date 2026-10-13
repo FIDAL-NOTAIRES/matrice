@@ -11,14 +11,16 @@ import { neon } from '@neondatabase/serverless';
 import { prochaineRelance } from '../lib/jours-ouvres.js';
 import { protege, auteurDepuis } from '../lib/verrou.js';
 import { destinatairesDe } from '../lib/envois.js';
+import { deposerBrouillon } from '../lib/courriel.js';
+import { etatLigne } from '../lib/suivi.js';
 
 const iso = (d) => d.toISOString().slice(0, 10);
 
-export default protege(async (req, res, utilisateur) => {
+export default protege(async (req, res, utilisateur, jetonDelegue) => {
   if (req.method !== 'POST') return res.status(405).json({ erreur: 'POST attendu' });
 
   const sql = neon(process.env.DATABASE_URL);
-  const { action, demandeId, motif, serviceNom, telephone, destinataire, envoiId, mode } = req.body || {};
+  const { action, demandeId, motif, serviceNom, telephone, destinataire, envoiId, mode, appel } = req.body || {};
 
   // L'auteur n'est plus déclaré par l'appelant : il vient du jeton.
   // Une piste d'audit où chacun signe du nom qu'il veut ne prouve rien.
@@ -206,7 +208,101 @@ export default protege(async (req, res, utilisateur) => {
       return res.status(200).json({ statut: 'reçue', commune: l.nom_commune, mode: modeRetenu, routage });
     }
 
-    return res.status(400).json({ erreur: "action inconnue : attendre | debloquer | abandonner | recu" });
+    // ------------------------------------------------- relance du service
+    // 13/10/2026. Arbitrages du 29/08 (jamais de relance silencieuse : MATRICE
+    // rédige le brouillon, le collaborateur l'envoie ; appel téléphonique avant
+    // la troisième relance) et du 13/10 (quinze jours). Une relance par COURRIEL
+    // PARTI : elle reprend toutes les communes de cet envoi encore sans réponse,
+    // sauf celles suspendues parce qu'un autre guichet a délivré.
+    if (action === 'relancer') {
+      if (!envoiId) return res.status(400).json({ erreur: 'envoiId obligatoire' });
+      const lignes = await sql`
+        SELECT ed.envoi_id, ed.demande_id, ed.recu_le, ed.ferme_le, ed.nb_relances_service,
+               ed.derniere_relance_service, ed.appels,
+               e.envoye_le, e.service_nom, e.destinataire, e.dossier,
+               d.nom_commune, d.code_insee, d.nb_lots, d.societe, d.siren,
+               EXISTS (SELECT 1 FROM matrice_envoi_demande y
+                        WHERE y.demande_id = d.id AND y.envoi_id <> e.id AND y.recu_le IS NOT NULL) AS autre_recue
+          FROM matrice_envoi_demande ed
+          JOIN matrice_envoi e ON e.id = ed.envoi_id
+          JOIN matrice_demande d ON d.id = ed.demande_id
+         WHERE ed.envoi_id = ${envoiId} AND d.statut <> 'abandonnee'
+         ORDER BY d.nom_commune
+      `;
+      const ouvertes = lignes.map((l) => ({ ...l, ...etatLigne(l) }))
+        .filter((l) => l.etat === 'a_relancer' || l.etat === 'en_cours');
+      if (!ouvertes.length) return res.status(409).json({ erreur: 'aucune commune à relancer sur cet envoi' });
+
+      const rang = Math.max(...ouvertes.map((l) => l.rang));
+      let compteRendu = null;
+      if (ouvertes.some((l) => l.appelRequis)) {
+        if (!appel || typeof appel.joint !== 'boolean') {
+          return res.status(409).json({
+            appelRequis: true,
+            erreur: `troisième relance ou suivante : appelez d'abord le service, puis consignez l'appel`,
+          });
+        }
+        if (appel.joint && !String(appel.interlocuteur || '').trim()) {
+          return res.status(400).json({ erreur: 'interlocuteur obligatoire quand le service a été joint' });
+        }
+        compteRendu = {
+          le: new Date().toISOString(), par: auteur, joint: appel.joint,
+          interlocuteur: String(appel.interlocuteur || '').trim() || null,
+          annonce: String(appel.annonce || '').trim() || null,
+        };
+      }
+
+      const t = ouvertes[0];
+      const date = (d) => new Date(d).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' });
+      const dates = [...new Set(ouvertes.flatMap((l) => l.derniere_relance_service ? [date(l.derniere_relance_service)] : []))];
+      const liste = ouvertes.map((l) => `— ${l.nom_commune} (${l.code_insee})`).join('\n');
+      const ouverture = compteRendu && compteRendu.joint
+        ? `Suite à notre échange téléphonique de ce jour avec ${compteRendu.interlocuteur}${
+            compteRendu.annonce ? `, qui nous a indiqué : « ${compteRendu.annonce} »` : ''},`
+          + ` nous revenons vers vous au sujet de notre demande du ${date(t.envoye_le)}.`
+        : compteRendu
+        ? `Malgré nos relances${dates.length ? ' du ' + dates.join(', du ') : ''} et nos tentatives pour joindre votre service par téléphone,`
+          + ` nous n'avons pas reçu de réponse à notre demande du ${date(t.envoye_le)}.`
+        : `Par courriel du ${date(t.envoye_le)}, nous vous avons adressé une demande d'extrait de matrice cadastrale.`
+          + ` Sauf erreur de notre part, elle est restée sans réponse à ce jour.`;
+      const corps = [
+        'Madame, Monsieur,', '',
+        ouverture, '',
+        `Elle porte sur les biens de ${t.societe}${t.siren ? ` (SIREN ${t.siren})` : ''}, dans ${ouvertes.length > 1 ? 'les communes suivantes' : 'la commune suivante'} :`,
+        liste, '',
+        `Nous vous remercions de bien vouloir nous faire parvenir ${ouvertes.length > 1 ? 'ces extraits' : 'cet extrait'},`
+          + ` ou de nous indiquer le service compétent si cette demande ne relève pas du vôtre.`, '',
+        'Bien cordialement,', '',
+        `Dossier ${t.dossier}`,
+      ].join('\n');
+      const objet = `${rang > 1 ? `${rang}ᵉ relance` : 'Relance'} — demande d'extrait de matrice cadastrale — dossier ${t.dossier}`;
+
+      const depot = await deposerBrouillon({ objet, corps, destinataires: [t.destinataire], jetonDelegue });
+
+      for (const l of ouvertes) {
+        await sql`
+          UPDATE matrice_envoi_demande
+             SET nb_relances_service = nb_relances_service + 1,
+                 derniere_relance_service = now(),
+                 appels = CASE WHEN ${compteRendu ? JSON.stringify(compteRendu) : null}::jsonb IS NULL THEN appels
+                               ELSE appels || jsonb_build_array(${compteRendu ? JSON.stringify(compteRendu) : null}::jsonb) END
+           WHERE envoi_id = ${envoiId} AND demande_id = ${l.demande_id}
+        `;
+        await sql`
+          INSERT INTO matrice_journal (demande_id, dossier, evenement, detail, auteur)
+          VALUES (${l.demande_id}, ${t.dossier}, 'relance_service',
+                  ${JSON.stringify({ envoi: Number(envoiId), rang: l.rang, destinataire: t.destinataire,
+                                     voie: depot.voie, appel: compteRendu || undefined })}::jsonb, ${auteur})
+        `;
+      }
+      return res.status(200).json({
+        statut: 'relance préparée', rang, communes: ouvertes.length,
+        voie: depot.voie, lien: depot.webLink || null, motifRepli: depot.motif || null,
+        eml: depot.voie === 'eml' ? depot.eml : undefined, destinataire: t.destinataire,
+      });
+    }
+
+    return res.status(400).json({ erreur: "action inconnue : attendre | debloquer | abandonner | recu | relancer" });
   } catch (e) {
     console.error('[MATRICE] mettre-en-attente', e);
     return res.status(500).json({ erreur: e.message });

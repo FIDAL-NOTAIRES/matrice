@@ -7,6 +7,7 @@ import { neon } from '@neondatabase/serverless';
 import { protege } from '../lib/verrou.js';
 import { vueDossier } from '../lib/vue-dossier.js';
 import { sceauConfigure } from '../lib/sceau.js';
+import { etatLigne } from '../lib/suivi.js';
 
 export default protege(async (req, res) => {
   if (req.method !== 'GET') return res.status(405).json({ erreur: 'GET attendu' });
@@ -61,6 +62,9 @@ export default protege(async (req, res) => {
         SELECT e.id AS envoi_id, e.service_nom, e.destinataire, e.envoye_le, e.envoye_par,
                d.id AS demande_id, d.code_insee, d.nom_commune, d.departement, d.nb_lots, d.statut,
                ed.recu_le, ed.recu_par,
+               ed.nb_relances_service, ed.derniere_relance_service, ed.appels, ed.ferme_le, ed.motif_fermeture,
+               EXISTS (SELECT 1 FROM matrice_envoi_demande y
+                        WHERE y.demande_id = d.id AND y.envoi_id <> e.id AND y.recu_le IS NOT NULL) AS autre_recue,
                (SELECT count(*) FROM matrice_envoi_demande x WHERE x.demande_id = d.id)::int AS nb_envois
           FROM matrice_envoi e
           JOIN matrice_envoi_demande ed ON ed.envoi_id = e.id
@@ -68,9 +72,14 @@ export default protege(async (req, res) => {
          WHERE e.dossier = ${dossier} AND d.statut <> 'abandonnee'
          ORDER BY e.envoye_le, e.id, d.nom_commune
       `;
+      // L'état (reçue, à relancer, suspendue, fermée) est calculé ici, par la
+      // même règle que la tâche du matin : l'écran ne fait que l'afficher.
+      suivi = suivi.map((l) => ({ ...l, ...etatLigne(l) }));
     } catch (err) {
       suiviErreur = /recu_le|recu_par/.test(err.message)
         ? 'migration 004 non passée : le suivi des réceptions n\'est pas encore disponible'
+        : /nb_relances_service|derniere_relance_service|appels|ferme_le|motif_fermeture/.test(err.message)
+        ? 'migration 005 non passée : la relance des services n\'est pas encore disponible'
         : err.message;
     }
 
