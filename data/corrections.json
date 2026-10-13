@@ -1,6 +1,6 @@
 {
   "version": 4,
-  "misAJourLe": "2026-08-19",
+  "misAJourLe": "2026-10-13",
   "primeSur": "sdif-departements.json",
   "remplace": "corrections.json v3, non deposee : 11,4 Mo, les 36 223 communes figees une a une",
   "sources": [
@@ -24,7 +24,8 @@
     "absente": "aucune adresse : file d'attente",
     "connue": "adresse obtenue, non confirmee par le service",
     "delivree_non_confirmee": "message de confirmation delivre sans rebond, sans reponse",
-    "confirmee": "confirmee par retour de message du service"
+    "confirmee": "confirmee par retour de message du service",
+    "a_verifier": "adresse au format déduit d'une autre adresse du même service : l'envoi part, la commune voisine vote, la réponse du guichet la confirme"
   },
   "synthese": {
     "services": 136,
@@ -161,10 +162,11 @@
       "departement": "62",
       "nomDepartement": "Pas-de-Calais",
       "motif": "PELH = pole d'evaluation des locaux d'habitation : ce n'est pas le guichet de la matrice, a confirmer avant tout envoi",
-      "levee": false,
-      "confirmeLe": null,
-      "confirmePar": null,
-      "effet": "tant que levee vaut false, ce courriel est traite comme absent"
+      "levee": true,
+      "confirmeLe": "2026-09-23",
+      "confirmePar": "JFD, par téléphone aux PELH du 62",
+      "effet": "tant que levee vaut false, ce courriel est traite comme absent",
+      "motifLevee": "les PELH du Pas-de-Calais délivrent bien les extraits de matrice pour l'instant, avec une répartition entre guichets dont le découpage n'est pas connu"
     },
     "cdif.les-sables-dolonne@dgfip.finances.gouv.fr": {
       "departement": "85",
@@ -1126,9 +1128,9 @@
       "i": 81,
       "id": "3e144566-d070-461f-8e94-c67c95477314",
       "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Arras",
-      "courriel": null,
-      "origineCourriel": null,
-      "etatAdresse": "absente",
+      "courriel": "pelh.620.arras@dgfip.finances.gouv.fr",
+      "origineCourriel": "format déduit de l'adresse publiée de Boulogne-sur-Mer (23/09/2026), à confirmer par la première réponse",
+      "etatAdresse": "a_verifier",
       "telephone": "03 21 24 68 68",
       "adressePostale": "10 rue Diderot, CS 80020, 62034 Arras Cedex",
       "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/pas-de-calais/3e144566-d070-461f-8e94-c67c95477314"
@@ -1148,9 +1150,9 @@
       "i": 83,
       "id": "c1db920d-eba4-4dd3-b9be-20efe3e414ac",
       "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Lens",
-      "courriel": null,
-      "origineCourriel": null,
-      "etatAdresse": "absente",
+      "courriel": "pelh.620.lens@dgfip.finances.gouv.fr",
+      "origineCourriel": "format déduit de l'adresse publiée de Boulogne-sur-Mer (23/09/2026), à confirmer par la première réponse",
+      "etatAdresse": "a_verifier",
       "telephone": "03 21 08 10 10",
       "adressePostale": "Centre des finances publiques, 7 rue Louis Armand, CS 80017, 62307 Lens Cedex",
       "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/pas-de-calais/c1db920d-eba4-4dd3-b9be-20efe3e414ac"
@@ -1159,9 +1161,9 @@
       "i": 84,
       "id": "4b26fe85-2513-43fe-9586-8ec55e874f2f",
       "nom": "Service départemental des impôts fonciers (SDIF) Pas-de-Calais - Saint-Omer",
-      "courriel": null,
-      "origineCourriel": null,
-      "etatAdresse": "absente",
+      "courriel": "pelh.620.saint-omer@dgfip.finances.gouv.fr",
+      "origineCourriel": "format déduit de l'adresse publiée de Boulogne-sur-Mer (23/09/2026), à confirmer par la première réponse",
+      "etatAdresse": "a_verifier",
       "telephone": "03 21 98 76 76",
       "adressePostale": "Centre des finances publiques, 1 allee Honore-de-Balzac, BP 30009, 62967 Longuenesse Cedex",
       "urlFiche": "https://lannuaire.service-public.gouv.fr/hauts-de-france/pas-de-calais/4b26fe85-2513-43fe-9586-8ec55e874f2f"
@@ -2242,7 +2244,15 @@
       ],
       "repartitionReelle": false,
       "nbCommunes": 895,
-      "nbExceptions": 0
+      "nbExceptions": 0,
+      "routage": "proximite",
+      "sieges": {
+        "81": "62041",
+        "82": "62160",
+        "83": "62498",
+        "84": "62525"
+      },
+      "noteRoutage": "23/09/2026 : quatre guichets compétents, découpage inconnu. Routage par proximité du siège du guichet ; si un second guichet est presque aussi proche, la demande part aux deux et la réponse tranche."
     },
     "63": {
       "services": [
