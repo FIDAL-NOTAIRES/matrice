@@ -521,11 +521,15 @@ function blocEnvoi(env) {
     <header><div class="id"><h4>${e(env.service || 'Service')}</h4>
       <div class="mail">${e(env.destinataire)}</div></div>
       <div class="pills"><span class="pill p-ok">prêt</span>${
-        env.issuDeDivergence ? '<span class="pill p-deduit">routage déduit</span>' : ''}</div></header>
+        env.issuDeDivergence ? '<span class="pill p-deduit">routage déduit</span>' : ''}${
+        env.communes.some((c) => /à vérifier/.test(c.motif || '') && (c.motif || '').includes(env.destinataire))
+          ? '<span class="pill p-wait">adresse à vérifier</span>' : ''}</div></header>
     <div class="body">
       <div class="count"><b>1 courriel</b> · ${env.communes.length} formulaires 6815-EM-SD ·
         ${env.communes.reduce((n, c) => n + (c.lots || 0), 0)} lots</div>
       <div class="coms">${env.communes.map(chip).join('')}</div>
+      ${env.communes.some((c) => /proche/.test(c.motif || '')) ? `<div class="why"><b>Routage par proximité du guichet.</b>
+        ${e([...new Set(env.communes.map((c) => c.motif).filter((m) => /proche/.test(m || '')))].join(' '))}</div>` : ''}
       ${env.issuDeDivergence ? `<div class="why"><b>Pourquoi ce service.</b> Au moins une commune de cet envoi
         y est adressée en second choix : le voisinage n'a pas convergé, et une demande distincte part vers
         chaque service possible. Aucun des services saisis ne sait que les autres le sont.</div>` : ''}
