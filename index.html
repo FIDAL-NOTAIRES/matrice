@@ -65,6 +65,13 @@ h3.sec{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--
 .why{margin-top:11px;padding:11px 13px;background:rgba(255,152,45,.09);border-left:3px solid var(--orange);
   border-radius:0 4px 4px 0;font-size:13px;white-space:pre-line}
 .why b{color:#ffbe77}
+.suivi{width:100%;border-collapse:collapse;font-size:13px}
+.suivi td{padding:8px 6px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:middle}
+.suivi tr:last-child td{border-bottom:0}
+.suivi .qui{color:var(--gris);font-size:11.5px}
+.suivi .ok{color:#7ad3db;font-size:12px}
+.suivi button{white-space:nowrap}
+.p-recu{background:rgba(51,131,139,.22);color:#7ad3db;border:1px solid rgba(51,131,139,.55)}
 .relance{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:11px;font-size:12.5px;color:var(--gris)}
 .tag{background:rgba(255,152,45,.14);border:1px solid rgba(255,152,45,.4);color:#ffbe77;
   border-radius:99px;padding:3px 10px;font-size:11.5px;font-weight:600}
@@ -348,8 +355,9 @@ function dessiner() {
 
   ${v.envois.length ? `<h3 class="sec">Ce qui part maintenant</h3>${v.envois.map(blocEnvoi).join('')}` : ''}
   ${v.enAttente.length ? `<h3 class="sec">Ce qui reste en attente</h3>${v.enAttente.map(blocAttente).join('')}` : ''}
-  ${v.dejaParties.length ? `<h3 class="sec">Déjà parties</h3><div class="svc"><div class="body">
-      <div class="coms">${v.dejaParties.map(chip).join('')}</div></div></div>` : ''}
+  ${v.suivi && v.suivi.length ? blocSuivi(v.suivi)
+    : v.dejaParties.length ? `<h3 class="sec">Déjà parties</h3><div class="svc"><div class="body">
+      <div class="coms">${v.dejaParties.map(chip).join('')}</div>${v.suiviErreur ? `<div class="why"><b>Suivi indisponible.</b> ${e(v.suiviErreur)}</div>` : ''}</div></div>` : ''}
 
   <h3 class="sec">Contrôles</h3>
   <div class="checks">${v.controles.map((c) => `
@@ -394,6 +402,65 @@ function dessiner() {
 
   app.querySelectorAll('[data-debloquer]').forEach((b) => { b.onclick = () => debloquer(b.dataset.debloquer, b.dataset.commune); });
   app.querySelectorAll('[data-abandonner]').forEach((b) => { b.onclick = () => abandonner(b.dataset.abandonner, b.dataset.commune); });
+  app.querySelectorAll('[data-recu]').forEach((b) => { b.onclick = () => marquerRecu(b.dataset.envoi, b.dataset.recu, b.dataset.commune); });
+}
+
+// ---------------------------------------------------- suivi des demandes parties
+// 13/10/2026. Une carte par courriel parti, une ligne par commune. Une commune
+// adressée à deux guichets apparaît dans les deux cartes : deux lignes, deux
+// réceptions possibles (arbitrage du 24/09/2026).
+function blocSuivi(lignes) {
+  const parEnvoi = new Map();
+  for (const l of lignes) {
+    if (!parEnvoi.has(l.envoi_id)) parEnvoi.set(l.envoi_id, { tete: l, lignes: [] });
+    parEnvoi.get(l.envoi_id).lignes.push(l);
+  }
+  const recues = new Set(lignes.filter((l) => l.recu_le).map((l) => l.demande_id)).size;
+  const communes = new Set(lignes.map((l) => l.demande_id)).size;
+  const date = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
+  return `<h3 class="sec">Suivi des demandes parties — ${recues} commune${recues > 1 ? 's' : ''} reçue${recues > 1 ? 's' : ''} sur ${communes}</h3>`
+    + [...parEnvoi.values()].map(({ tete, lignes: ls }) => `<div class="svc">
+    <header><div class="id"><h4>${e(tete.service_nom || 'Service')}</h4>
+      <div class="mail">${e(tete.destinataire)}</div></div>
+      <div class="pills"><span class="pill ${ls.every((x) => x.recu_le) ? 'p-recu' : 'p-wait'}">${
+        ls.every((x) => x.recu_le) ? 'tout reçu' : `${ls.filter((x) => x.recu_le).length} / ${ls.length} reçu${ls.length > 1 ? 's' : ''}`}</span></div></header>
+    <div class="body"><div class="count">parti le ${date(tete.envoye_le)} par ${e(tete.envoye_par || '—')}</div>
+      <table class="suivi">${ls.map((l) => `<tr>
+        <td><b>${e(l.nom_commune)}</b> <span class="qui">${e(l.code_insee)} · ${l.nb_lots} lot${l.nb_lots > 1 ? 's' : ''}</span>${
+          l.nb_envois > 1 ? ' <span class="pill p-deduit">' + l.nb_envois + ' guichets saisis</span>' : ''}</td>
+        <td style="text-align:right">${l.recu_le
+          ? `<span class="ok">✓ reçu le ${date(l.recu_le)}</span> <span class="qui">${e(l.recu_par || '')}</span>`
+          : `<button class="ghost" data-recu="${l.demande_id}" data-envoi="${l.envoi_id}" data-commune="${e(l.nom_commune)}">Extrait reçu</button>`}</td>
+      </tr>`).join('')}</table>
+    </div></div>`).join('');
+}
+
+async function marquerRecu(envoiId, demandeId, commune, mode) {
+  try {
+    const r = await api('/api/mettre-en-attente', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'recu', envoiId: Number(envoiId), demandeId: Number(demandeId), mode }),
+    });
+    await charger();
+    return r;
+  } catch (err) {
+    // Une autre ligne de la même commune est déjà marquée reçue : il faut
+    // savoir ce que vaut ce clic. Le dernier fait foi en cas de correction.
+    if (!mode && /déjà marquée reçue/.test(err.message) && !/cette ligne/.test(err.message)) {
+      if (confirm(`${commune} est déjà marquée reçue sur un autre envoi.\n\n`
+        + `Ce guichet-ci a-t-il AUSSI délivré l'extrait ?\n`
+        + `(Le premier arrivé garde la priorité, celui-ci sera tracé comme compétent.)`)) {
+        return marquerRecu(envoiId, demandeId, commune, 'seconde');
+      }
+      if (confirm(`Alors l'autre clic était une ERREUR DE LIGNE ?\n\n`
+        + `OK : c'est ce clic-ci qui fait foi, l'autre ligne repasse « non reçue ».\n`
+        + `Annuler : ne rien changer.`)) {
+        return marquerRecu(envoiId, demandeId, commune, 'correction');
+      }
+      return;
+    }
+    alert('Échec : ' + err.message);
+  }
 }
 
 // Une commune adressée à plusieurs services est marquée : deux courriels pour
