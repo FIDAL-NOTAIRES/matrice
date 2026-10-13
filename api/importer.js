@@ -239,12 +239,14 @@ export const executerImport = async (req, res, utilisateur) => {
       l.telephone = d.telephone;
       // Déduite, jamais confirmée : l'écran doit pouvoir le dire, et le
       // compteur `adressesNonConfirmees` reste juste.
-      l.etatAdresse = 'deduite';
-      l.origineAdresse = 'déduction par voisinage';
-      l.resolution = `voisinage (${d.statut})`;
+      l.etatAdresse = d.etatAdresse || 'deduite';
+      l.origineAdresse = d.origine || 'déduction par voisinage';
+      l.resolution = `${d.origine ? 'proximité' : 'voisinage'} (${d.statut})`;
       // Le motif d'attente disparaît sur convergence ; sur divergence il
-      // devient l'explication du routage multiple, et reste affiché.
-      l.motif = d.statut === 'divergent' ? d.motif : null;
+      // devient l'explication du routage multiple, et reste affiché. Le
+      // routage par proximité (Pas-de-Calais, 23/09/2026) garde toujours son
+      // explication : distances et adresses à vérifier.
+      l.motif = d.statut === 'divergent' || d.origine ? d.motif : null;
       l.servicesAlternatifs = d.statut === 'divergent'
         ? d.voisines
             .filter((v) => v.destinataire && v.destinataire !== d.destinataire)
