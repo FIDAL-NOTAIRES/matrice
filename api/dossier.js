@@ -50,10 +50,36 @@ export default protege(async (req, res) => {
     // sa clé si.
     const sceau = sceauConfigure();
 
+    // SUIVI DES DEMANDES PARTIES (13/10/2026) — une ligne par envoi et par
+    // commune : une commune adressée à deux guichets donne deux lignes, chacune
+    // avec sa propre réception (arbitrage du 24/09/2026). Tant que la
+    // migration 004 n'est pas passée, les colonnes de réception manquent : le
+    // récapitulatif reste lisible, et l'écran dit ce qui manque.
+    let suivi = null, suiviErreur = null;
+    try {
+      suivi = await sql`
+        SELECT e.id AS envoi_id, e.service_nom, e.destinataire, e.envoye_le, e.envoye_par,
+               d.id AS demande_id, d.code_insee, d.nom_commune, d.departement, d.nb_lots, d.statut,
+               ed.recu_le, ed.recu_par,
+               (SELECT count(*) FROM matrice_envoi_demande x WHERE x.demande_id = d.id)::int AS nb_envois
+          FROM matrice_envoi e
+          JOIN matrice_envoi_demande ed ON ed.envoi_id = e.id
+          JOIN matrice_demande d ON d.id = ed.demande_id
+         WHERE e.dossier = ${dossier} AND d.statut <> 'abandonnee'
+         ORDER BY e.envoye_le, e.id, d.nom_commune
+      `;
+    } catch (err) {
+      suiviErreur = /recu_le|recu_par/.test(err.message)
+        ? 'migration 004 non passée : le suivi des réceptions n\'est pas encore disponible'
+        : err.message;
+    }
+
     return res.status(200).json({
       dossier,
       sceau,
       ...vueDossier(lignes),
+      suivi,
+      suiviErreur,
     });
   } catch (e) {
     console.error('[MATRICE] dossier', e);
