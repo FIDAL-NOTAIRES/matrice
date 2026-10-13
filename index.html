@@ -71,6 +71,8 @@ h3.sec{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--
 .suivi .qui{color:var(--gris);font-size:11.5px}
 .suivi .ok{color:#7ad3db;font-size:12px}
 .suivi button{white-space:nowrap}
+.suivi .etat{font-size:11.5px;margin-top:3px}
+.suivi .etat.du{color:#ffbe77} .suivi .etat.susp{color:var(--ocre)} .suivi .etat.ferm{color:var(--gris);text-decoration:line-through}
 .p-recu{background:rgba(51,131,139,.22);color:#7ad3db;border:1px solid rgba(51,131,139,.55)}
 .relance{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:11px;font-size:12.5px;color:var(--gris)}
 .tag{background:rgba(255,152,45,.14);border:1px solid rgba(255,152,45,.4);color:#ffbe77;
@@ -403,6 +405,7 @@ function dessiner() {
   app.querySelectorAll('[data-debloquer]').forEach((b) => { b.onclick = () => debloquer(b.dataset.debloquer, b.dataset.commune); });
   app.querySelectorAll('[data-abandonner]').forEach((b) => { b.onclick = () => abandonner(b.dataset.abandonner, b.dataset.commune); });
   app.querySelectorAll('[data-recu]').forEach((b) => { b.onclick = () => marquerRecu(b.dataset.envoi, b.dataset.recu, b.dataset.commune); });
+  app.querySelectorAll('[data-relancer]').forEach((b) => { b.onclick = () => relancerService(b.dataset.relancer); });
 }
 
 // ---------------------------------------------------- suivi des demandes parties
@@ -423,16 +426,61 @@ function blocSuivi(lignes) {
     <header><div class="id"><h4>${e(tete.service_nom || 'Service')}</h4>
       <div class="mail">${e(tete.destinataire)}</div></div>
       <div class="pills"><span class="pill ${ls.every((x) => x.recu_le) ? 'p-recu' : 'p-wait'}">${
-        ls.every((x) => x.recu_le) ? 'tout reçu' : `${ls.filter((x) => x.recu_le).length} / ${ls.length} reçu${ls.length > 1 ? 's' : ''}`}</span></div></header>
-    <div class="body"><div class="count">parti le ${date(tete.envoye_le)} par ${e(tete.envoye_par || '—')}</div>
+        ls.every((x) => x.recu_le) ? 'tout reçu' : `${ls.filter((x) => x.recu_le).length} / ${ls.length} reçu${ls.length > 1 ? 's' : ''}`}</span>${
+        ls.some((x) => x.etat === 'a_relancer') ? '<span class="pill p-wait">relance due</span>' : ''}</div></header>
+    <div class="body"><div class="count">parti le ${date(tete.envoye_le)} par ${e(tete.envoye_par || '—')}${
+      ls[0].nb_relances_service ? ` · ${ls[0].nb_relances_service} relance${ls[0].nb_relances_service > 1 ? 's' : ''}, la dernière le ${date(ls[0].derniere_relance_service)}` : ''}</div>
       <table class="suivi">${ls.map((l) => `<tr>
         <td><b>${e(l.nom_commune)}</b> <span class="qui">${e(l.code_insee)} · ${l.nb_lots} lot${l.nb_lots > 1 ? 's' : ''}</span>${
-          l.nb_envois > 1 ? ' <span class="pill p-deduit">' + l.nb_envois + ' guichets saisis</span>' : ''}</td>
+          l.nb_envois > 1 ? ' <span class="pill p-deduit">' + l.nb_envois + ' guichets saisis</span>' : ''}${etatSuivi(l)}</td>
         <td style="text-align:right">${l.recu_le
           ? `<span class="ok">✓ reçu le ${date(l.recu_le)}</span> <span class="qui">${e(l.recu_par || '')}</span>`
+          : l.etat === 'fermee' ? '<span class="qui">fermée</span>'
           : `<button class="ghost" data-recu="${l.demande_id}" data-envoi="${l.envoi_id}" data-commune="${e(l.nom_commune)}">Extrait reçu</button>`}</td>
       </tr>`).join('')}</table>
+      ${ls.some((x) => x.etat === 'a_relancer' || x.etat === 'en_cours') ? `<div class="acts" style="margin-top:10px">
+        <button class="ghost" data-relancer="${tete.envoi_id}">Relancer le service${
+          ls.some((x) => x.appelRequis) ? ' (après appel)' : ''}</button></div>` : ''}
     </div></div>`).join('');
+}
+
+// L'état d'une ligne, tel que le serveur l'a calculé (lib/suivi.js).
+function etatSuivi(l) {
+  const date = (d) => d ? new Date(d).toLocaleDateString('fr-FR') : '—';
+  if (l.etat === 'a_relancer') return `<div class="etat du">${l.rang > 1 ? l.rang + 'ᵉ relance' : 'Relance'} due depuis le ${date(l.echeance)}${
+    l.appelRequis ? ' — appeler le service d\'abord' : ''}</div>`;
+  if (l.etat === 'en_cours') return `<div class="etat">${l.rang > 1 ? l.rang + 'ᵉ relance' : 'Relance'} le ${date(l.echeance)} sans réponse d'ici là</div>`;
+  if (l.etat === 'suspendue') return `<div class="etat susp">Relance suspendue : un autre guichet a délivré l'extrait. Sans réponse, fermeture le ${date(l.fermeture)}.</div>`;
+  if (l.etat === 'fermee') return `<div class="etat ferm">${e(l.motif_fermeture || 'fermée')}</div>`;
+  return '';
+}
+
+async function relancerService(envoiId, appel) {
+  try {
+    const r = await api('/api/mettre-en-attente', {
+      method: 'POST', body: JSON.stringify({ action: 'relancer', envoiId: Number(envoiId), appel }),
+    });
+    if (r.voie === 'eml' && r.eml) {
+      telechargerEml(`MATRICE_relance_${dossier}_${String(r.destinataire).split('@')[0]}.eml`, r.eml);
+      alert(`Relance préparée (${r.communes} commune${r.communes > 1 ? 's' : ''}). Le fichier .eml est téléchargé : ouvrez-le dans Outlook, relisez, envoyez.`);
+    } else {
+      alert(`Relance préparée (${r.communes} commune${r.communes > 1 ? 's' : ''}) : le brouillon est dans votre boîte Outlook. Relisez-le et envoyez-le.`);
+    }
+    await charger();
+  } catch (err) {
+    // Troisième relance ou suivante : on appelle d'abord, et l'appel est consigné.
+    if (!appel && /appelez d'abord/.test(err.message)) {
+      const joint = confirm(`Avant cette relance, il faut appeler le service.\n\nOK : le service a été joint.\nAnnuler : il n'a pas pu être joint.`);
+      const ap = { joint };
+      if (joint) {
+        ap.interlocuteur = prompt('Nom de l\'interlocuteur :') || '';
+        if (!ap.interlocuteur.trim()) return alert('Le nom de l\'interlocuteur est obligatoire.');
+        ap.annonce = prompt('Ce qu\'il a annoncé (facultatif) :') || '';
+      }
+      return relancerService(envoiId, ap);
+    }
+    alert('Échec : ' + err.message);
+  }
 }
 
 async function marquerRecu(envoiId, demandeId, commune, mode) {
